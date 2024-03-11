@@ -60,6 +60,11 @@ impl JoinedFile {
         self.splits.last().map(|s| s.end).unwrap_or_default()
     }
 
+    /// Get the boundaries for each split.
+    pub fn splits(&self) -> Vec<Range<u64>> {
+        self.splits.clone()
+    }
+
     /// Add the next file split. The size of this split is queried once and then
     /// cached. This will change the total size of the joined view, which
     /// affects seeks relative to EOF.

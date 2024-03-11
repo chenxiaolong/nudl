@@ -38,6 +38,12 @@ pub enum Error {
     BadFieldLength(&'static str, usize),
     #[error("Field {0:?} has invalid value: {1:?}")]
     BadFieldValue(&'static str, String),
+    #[error("Unknown split zip naming scheme: {first} -> {last} ({count})")]
+    UnknownZipNaming {
+        first: String,
+        last: String,
+        count: u32,
+    },
     #[error("Failed to decode base64 data: {0}")]
     Base64Decode(#[from] base64::DecodeError),
     #[error("HTTP request error: {0}")]
@@ -96,8 +102,9 @@ pub struct CarInfo {
 impl TryFrom<Car> for CarInfo {
     type Error = Error;
 
-    fn try_from(mut car: Car) -> Result<Self> {
-        if car.sw_vers.len() != 1 {
+    fn try_from(car: Car) -> Result<Self> {
+        // This has more than one entry for ccNC vehicles.
+        if car.sw_vers.is_empty() {
             return Err(Error::BadFieldLength("sw_vers", car.sw_vers.len()));
         }
 
@@ -106,7 +113,7 @@ impl TryFrom<Car> for CarInfo {
             id: car.dest_path,
             code: car.download_code,
             model: car.dvc_name,
-            version: car.sw_vers.pop().unwrap(),
+            version: car.sw_vers.into_iter().next().unwrap(),
             mcode: car.mcode,
         })
     }
@@ -122,6 +129,107 @@ impl CarInfo {
 }
 
 #[derive(Clone, Debug)]
+enum ZipNamingScheme {
+    NotZip,
+    NotSplit {
+        name: String,
+    },
+    Legacy {
+        prefix: String,
+        suffix: String,
+        digits: u8,
+    },
+    Standard {
+        base_name: String,
+        count: u32,
+    },
+}
+
+impl ZipNamingScheme {
+    fn parse(first: &str, last: &str, count: u32) -> Result<Self> {
+        if count == 0 {
+            return Ok(Self::NotZip);
+        } else if count == 1 {
+            if first == last {
+                return Ok(Self::NotSplit {
+                    name: first.to_owned(),
+                });
+            }
+        } else {
+            let digits = count.to_string().len().max(3) as u8;
+
+            // The legacy naming scheme is 1-based and is padded to at least 3
+            // digits. Each file has the number before the file extension.
+            let count_str = format!("{count:0width$}", width = digits as usize);
+            if let Some((prefix, suffix)) = last.rsplit_once(&count_str) {
+                if prefix.len() + suffix.len() == first.len()
+                    && first.starts_with(prefix)
+                    && first.ends_with(suffix)
+                {
+                    return Ok(Self::Legacy {
+                        prefix: prefix.to_owned(),
+                        suffix: suffix.to_owned(),
+                        digits,
+                    });
+                }
+            }
+
+            // The modern naming scheme is uses the same scheme as the Info-ZIP
+            // command line tool. The last file has the `.zip` extension, while
+            // the rest have `.z<num>` extensions, where the number is padded to
+            // at least two digits.
+            //
+            // Note that "first" and "last", as reported by the server, does not
+            // refer to the first and last files as they would be parsed.
+            // "first" is actually the last file and "last" is the second last
+            // file.
+            let last_ext = format!(".z{:02}", count - 1);
+            let first_no_ext = first.strip_suffix(".zip");
+            let last_no_ext = last.strip_suffix(&last_ext);
+            if let Some(base_name) = first_no_ext {
+                if first_no_ext == last_no_ext {
+                    return Ok(Self::Standard {
+                        base_name: base_name.to_owned(),
+                        count,
+                    });
+                }
+            }
+        }
+
+        Err(Error::UnknownZipNaming {
+            first: first.to_owned(),
+            last: last.to_owned(),
+            count,
+        })
+    }
+
+    fn name(&self, index: u32) -> String {
+        match self {
+            Self::NotZip => String::new(),
+            Self::NotSplit { name } => name.clone(),
+            Self::Legacy {
+                prefix,
+                suffix,
+                digits,
+            } => {
+                format!(
+                    "{prefix}{:0width$}{suffix}",
+                    index + 1,
+                    width = usize::from(*digits),
+                )
+            }
+            Self::Standard { base_name, count } => {
+                if index == count - 1 {
+                    format!("{base_name}.zip")
+                } else {
+                    format!("{base_name}.z{:02}", index + 1)
+                }
+            }
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct FileInfo {
     /// CRC32 digest of the output file after extraction.
     pub crc32: u32,
@@ -130,7 +238,7 @@ pub struct FileInfo {
     /// Filename of the output file after extraction.
     pub name: String,
     /// Size of the output file after extraction.
-    pub size: u32,
+    pub size: u64,
     /// Server-side path containing each split zip.
     pub server_path: String,
     /// Unknown version number. Does not appear to correlate with other version
@@ -139,72 +247,46 @@ pub struct FileInfo {
     /// Number of split zip files.
     zip_count: u32,
     /// Total byte size of all split zip files.
-    zip_size: u32,
-    /// Prefix for zip filename.
-    zip_prefix: String,
-    /// Suffix for zip filename.
-    zip_suffix: String,
-    /// Number of digits for file index in zip filename.
-    zip_digits: u8,
+    zip_size: u64,
+    /// Naming scheme for split zip files.
+    zip_naming: ZipNamingScheme,
 }
 
 impl TryFrom<File> for FileInfo {
     type Error = Error;
 
     fn try_from(file: File) -> Result<Self> {
-        let zip_digits = u8::try_from(file.zip_file_cnt.len())
-            .map_err(|_| Error::BadFieldValue("zip_file_cnt", file.zip_file_cnt.clone()))?
-            .max(3);
-
         let crc32 = file
             .file_crc
             .parse::<i32>()
             .map_err(|_| Error::BadFieldValue("file_crc", file.file_crc))?;
-        let size = file
+        let mut size = file
             .file_size
-            .parse::<i32>()
+            .parse::<i64>()
             .map_err(|_| Error::BadFieldValue("file_size", file.file_size))?;
         let zip_count = file
             .zip_file_cnt
             .parse::<u32>()
             .map_err(|_| Error::BadFieldValue("zip_file_cnt", file.zip_file_cnt))?;
-        let zip_size = file
+        let mut zip_size = file
             .zip_file_size
-            .parse::<i32>()
+            .parse::<i64>()
             .map_err(|_| Error::BadFieldValue("zip_file_size", file.zip_file_size))?;
 
-        let (zip_prefix, zip_suffix) = if zip_count == 0 {
-            ("", "")
-        } else if zip_count == 1 {
-            if file.zip_file_first_name != file.zip_file_last_name {
-                return Err(Error::BadFieldValue(
-                    "zip_file_last_name",
-                    file.zip_file_last_name.clone(),
-                ));
-            }
+        // For older models, the server returns the sizes as signed 32-bit
+        // integers that overflow.
+        if size < 0 {
+            size = (size as i32 as u32).into();
+        }
+        if zip_size < 0 {
+            zip_size = (zip_size as i32 as u32).into();
+        }
 
-            (file.zip_file_first_name.as_str(), "")
-        } else {
-            let count_str = format!("{zip_count:0width$}", width = zip_digits as usize);
-            let (prefix, suffix) =
-                file.zip_file_last_name
-                    .rsplit_once(&count_str)
-                    .ok_or_else(|| {
-                        Error::BadFieldValue("zip_file_last_name", file.zip_file_last_name.clone())
-                    })?;
-
-            if prefix.len() + suffix.len() != file.zip_file_first_name.len()
-                || !file.zip_file_first_name.starts_with(prefix)
-                || !file.zip_file_first_name.ends_with(suffix)
-            {
-                return Err(Error::BadFieldValue(
-                    "zip_file_first_name",
-                    file.zip_file_first_name,
-                ))?;
-            }
-
-            (prefix, suffix)
-        };
+        let zip_naming = ZipNamingScheme::parse(
+            &file.zip_file_first_name,
+            &file.zip_file_last_name,
+            zip_count,
+        )?;
 
         Ok(Self {
             crc32: crc32 as u32,
@@ -214,14 +296,12 @@ impl TryFrom<File> for FileInfo {
                 Some(file.dest_path)
             },
             name: file.file_name,
-            size: size as u32,
+            size: size as u64,
             server_path: file.file_path,
             version: file.version,
             zip_count,
-            zip_size: zip_size as u32,
-            zip_prefix: zip_prefix.to_owned(),
-            zip_suffix: zip_suffix.to_owned(),
-            zip_digits,
+            zip_size: zip_size as u64,
+            zip_naming,
         })
     }
 }
@@ -263,18 +343,10 @@ impl FileInfo {
     pub fn download_name(&self, index: u32) -> String {
         assert!(index < self.download_count(), "{index} is out of range");
 
-        if self.zip_count == 0 {
+        if let ZipNamingScheme::NotZip = self.zip_naming {
             self.name.clone()
-        } else if self.zip_count == 1 {
-            format!("{}{}", self.zip_prefix, self.zip_suffix)
         } else {
-            format!(
-                "{}{:0width$}{}",
-                self.zip_prefix,
-                index + 1,
-                self.zip_suffix,
-                width = self.zip_digits as usize,
-            )
+            self.zip_naming.name(index)
         }
     }
 
@@ -294,7 +366,7 @@ impl FileInfo {
     }
 
     /// Get the total size of all downloads.
-    pub fn download_size(&self) -> u32 {
+    pub fn download_size(&self) -> u64 {
         if self.zip_count == 0 {
             self.size
         } else {
@@ -320,7 +392,15 @@ pub struct FirmwareInfo {
 impl TryFrom<CarDownloadData> for FirmwareInfo {
     type Error = Error;
 
-    fn try_from(data: CarDownloadData) -> Result<Self> {
+    fn try_from(mut data: CarDownloadData) -> Result<Self> {
+        // These fields are empty for ccNC vehicles.
+        if data.environment.download_file_cnt.is_empty() {
+            data.environment.download_file_cnt.push('0');
+        }
+        if data.environment.download_file_size.is_empty() {
+            data.environment.download_file_size.push('0');
+        }
+
         let count = data
             .environment
             .download_file_cnt

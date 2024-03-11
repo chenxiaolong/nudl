@@ -96,13 +96,13 @@ impl FromStr for Brand {
 #[derive(Debug, Args)]
 pub struct FamilyGroup {
     /// Car brand.
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub brand: Brand,
 
     /// Car region.
     ///
     /// This is an uppercase ISO country code. Autodetected if unspecified.
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub region: Option<String>,
 }
 
@@ -119,33 +119,49 @@ pub struct DownloadCli {
     #[command(flatten)]
     pub family: FamilyGroup,
 
-    /// Car model,
-    #[clap(short, long)]
+    /// Car model.
+    #[arg(short, long)]
     pub model: String,
 
     /// Output directory.
-    #[clap(short, long, value_parser, default_value = ".")]
+    #[arg(short, long, value_parser, default_value = ".")]
     pub output: PathBuf,
 
     /// Download and post-processing concurrency.
     ///
     /// The maximum concurrency allowed is 16.
-    #[clap(short, long, default_value = "4")]
+    #[arg(short, long, default_value = "4")]
     pub concurrency: Concurrency,
 
     /// Maximum retries during download.
-    #[clap(long, default_value = "3")]
+    #[arg(long, default_value = "3")]
     pub retries: u8,
 
     /// Keep raw unextracted files.
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub keep_raw: bool,
+}
+
+/// Join split zip files.
+#[derive(Debug, Parser)]
+pub struct JoinZipCli {
+    /// Split input files.
+    ///
+    /// The files must be specified in order.
+    #[arg(value_parser, value_name = "FILE")]
+    pub input: Vec<PathBuf>,
+
+    /// Joined output file.
+    #[arg(short, long, value_parser, value_name = "FILE")]
+    pub output: PathBuf,
 }
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
     List(ListCli),
     Download(DownloadCli),
+    #[command(hide = true)]
+    JoinZip(JoinZipCli),
 }
 
 #[derive(Debug, Parser)]
@@ -162,6 +178,6 @@ pub struct Cli {
     ///
     /// By default, all HTTPS connections (eg. to FUS) will validate the TLS
     /// certificate against the system's CA trust store.
-    #[clap(long, global = true)]
+    #[arg(long, global = true)]
     pub ignore_tls_validation: bool,
 }

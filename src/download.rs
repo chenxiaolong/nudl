@@ -38,14 +38,14 @@ const VERIFY_EXT: &str = concat!(env!("CARGO_PKG_NAME"), "_verify");
 
 const RETRY_DELAY: Duration = Duration::from_secs(1);
 
-struct CancelOnDrop(Arc<AtomicBool>);
+pub struct CancelOnDrop(Arc<AtomicBool>);
 
 impl CancelOnDrop {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self(Arc::new(AtomicBool::new(false)))
     }
 
-    fn handle(&self) -> Arc<AtomicBool> {
+    pub fn handle(&self) -> Arc<AtomicBool> {
         self.0.clone()
     }
 }
@@ -60,7 +60,7 @@ impl Drop for CancelOnDrop {
 /// `cancel_signal` is true. This should be called frequently in I/O loops for
 /// cancellation to be responsive.
 #[inline]
-fn check_cancel(cancel_signal: &AtomicBool) -> io::Result<()> {
+pub fn check_cancel(cancel_signal: &AtomicBool) -> io::Result<()> {
     if cancel_signal.load(Ordering::SeqCst) {
         return Err(io::Error::new(
             io::ErrorKind::Interrupted,
@@ -261,8 +261,8 @@ impl Downloader {
 
             if stat_if_exists(directory, Path::new(&file_info.name))?.is_some() {
                 // Downloaded and post-processed.
-                dl_bytes += u64::from(file_info.download_size());
-                pp_bytes += u64::from(file_info.size);
+                dl_bytes += file_info.download_size();
+                pp_bytes += file_info.size;
 
                 // Make sure splits are cleaned up.
                 if file_info.is_split() {
@@ -587,7 +587,7 @@ impl Downloader {
                 .with_context(|| format!("Failed to add to joined view: {path}"))?;
         }
 
-        let expected_size = u64::from(file_info.download_size());
+        let expected_size = file_info.download_size();
         let actual_size = joined.len();
 
         if actual_size != expected_size {
@@ -597,8 +597,9 @@ impl Downloader {
             );
         }
 
+        let split_ranges = joined.splits();
         let mut cow_file = MemoryCowFile::new(joined, 4096)?;
-        split::fix_offsets(&mut cow_file)
+        split::fix_offsets(&mut cow_file, &split_ranges)
             .with_context(|| format!("Failed to fix split zip offsets: {}", file_info.path()))?;
         cow_file.rewind()?;
 
@@ -785,12 +786,7 @@ impl Downloader {
         };
 
         // Report initial progress.
-        let dl_total = self
-            .firmware
-            .files
-            .iter()
-            .map(|f| u64::from(f.download_size()))
-            .sum();
+        let dl_total = self.firmware.files.iter().map(|f| f.download_size()).sum();
         let pp_total = self.firmware.size;
 
         self.progress_tx
