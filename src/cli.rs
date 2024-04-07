@@ -142,26 +142,10 @@ pub struct DownloadCli {
     pub keep_raw: bool,
 }
 
-/// Join split zip files.
-#[derive(Debug, Parser)]
-pub struct JoinZipCli {
-    /// Split input files.
-    ///
-    /// The files must be specified in order.
-    #[arg(value_parser, value_name = "FILE")]
-    pub input: Vec<PathBuf>,
-
-    /// Joined output file.
-    #[arg(short, long, value_parser, value_name = "FILE")]
-    pub output: PathBuf,
-}
-
 #[derive(Debug, Subcommand)]
 pub enum Command {
     List(ListCli),
     Download(DownloadCli),
-    #[command(hide = true)]
-    JoinZip(JoinZipCli),
 }
 
 #[derive(Debug, Parser)]

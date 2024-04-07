@@ -6,17 +6,11 @@ mod client;
 mod constants;
 mod crypto;
 mod download;
-mod file;
 mod model;
 mod progress;
-mod split;
 
 use std::{
-    collections::HashMap,
-    fs::File,
-    io::{self, IsTerminal, Read, Seek, Write},
-    path::Path,
-    sync::Arc,
+    io::{self, IsTerminal},
     time::Duration,
 };
 
@@ -25,14 +19,13 @@ use cap_std::{ambient_authority, fs::Dir};
 use clap::Parser;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
-use tokio::{signal::ctrl_c, sync::mpsc, task};
+use tokio::signal::ctrl_c;
 use tracing::debug;
 
 use crate::{
-    cli::{Cli, Command, DownloadCli, JoinZipCli, ListCli},
+    cli::{Cli, Command, DownloadCli, ListCli},
     client::{NuClient, NuClientBuilder},
-    download::{check_cancel, CancelOnDrop, Downloader, ProgressMessage},
-    file::{JoinedFile, MemoryCowFile},
+    download::{Downloader, ProgressMessage},
     progress::{ProgressSuspendingStderr, SpeedTracker},
 };
 
@@ -186,115 +179,6 @@ async fn download_subcommand(
     Ok(())
 }
 
-async fn join_zip_subcommand(join_cli: &JoinZipCli, bars: MultiProgress) -> Result<()> {
-    enum Message {
-        Total(u64),
-        Advance(u64),
-    }
-
-    let cancel_on_drop = CancelOnDrop::new();
-    let cancel_signal = cancel_on_drop.handle();
-
-    let inputs = join_cli.input.clone();
-    let output = join_cli.output.clone();
-
-    let progress = bars.add(ProgressBar::hidden());
-    progress.set_prefix("Join");
-    progress.set_style(progress_style());
-
-    let (progress_tx, mut progress_rx) = mpsc::channel(8);
-
-    let mut handle = task::spawn_blocking(move || {
-        let mut joined = JoinedFile::new();
-        let mut directories = HashMap::new();
-        let authority = ambient_authority();
-
-        for input in &inputs {
-            check_cancel(&cancel_signal)?;
-
-            let parent = input.parent().unwrap_or_else(|| Path::new("."));
-            let Some(name) = input.file_name() else {
-                bail!("Invalid path: {input:?}");
-            };
-
-            if !directories.contains_key(parent) {
-                let directory = Dir::open_ambient_dir(parent, authority)
-                    .map(Arc::new)
-                    .with_context(|| format!("Failed to open directory: {parent:?}"))?;
-                directories.insert(parent, directory);
-            }
-
-            let directory = directories[parent].clone();
-
-            joined
-                .add_file(directory, Path::new(name))
-                .with_context(|| format!("Failed to add to joined view: {input:?}"))?;
-        }
-
-        progress_tx.blocking_send(Message::Total(joined.len()))?;
-
-        let split_ranges = joined.splits();
-        let mut cow_file = MemoryCowFile::new(joined, 4096)?;
-        split::fix_offsets(&mut cow_file, &split_ranges)
-            .context("Failed to fix split zip offsets")?;
-        cow_file.rewind()?;
-
-        check_cancel(&cancel_signal)?;
-
-        let mut file =
-            File::create(&output).with_context(|| format!("Failed to create file: {output:?}"))?;
-        let mut buf = [0u8; 8192];
-
-        loop {
-            check_cancel(&cancel_signal)?;
-
-            let n = cow_file
-                .read(&mut buf)
-                .context("Failed to read split files")?;
-            if n == 0 {
-                break;
-            }
-
-            file.write_all(&buf[..n])
-                .with_context(|| format!("Failed to write data: {output:?}"))?;
-
-            progress_tx.blocking_send(Message::Advance(n as u64))?;
-        }
-
-        Ok(())
-    });
-
-    loop {
-        tokio::select! {
-            c = ctrl_c() => {
-                let _ = bars.clear();
-                c?;
-
-                bail!("Interrupted.");
-            }
-            r = &mut handle => {
-                let _ = bars.clear();
-                r??;
-                break;
-            }
-            p = progress_rx.recv() => {
-                if let Some(msg) = p {
-                    match msg {
-                        Message::Total(bytes) => {
-                            progress.set_length(bytes);
-                        }
-                        Message::Advance(bytes) => {
-                            progress.set_position(progress.position() + bytes);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    Ok(())
-}
-
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -312,6 +196,5 @@ async fn main() -> Result<()> {
     match &cli.command {
         Command::List(c) => list_subcommand(&cli, c).await,
         Command::Download(c) => download_subcommand(&cli, c, bars).await,
-        Command::JoinZip(c) => join_zip_subcommand(c, bars).await,
     }
 }

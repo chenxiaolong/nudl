@@ -4,7 +4,7 @@
 use std::{
     collections::VecDeque,
     io::{self, Read, Seek, SeekFrom, Write},
-    path::Path,
+    path::{Path, PathBuf},
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -25,12 +25,12 @@ use tokio::{
 use tokio_stream::StreamExt;
 use tracing::{debug, trace, warn};
 use zip::ZipArchive;
-
-use crate::{
-    client::{self, CarInfo, FirmwareInfo, NuClient},
-    file::{JoinedFile, MemoryCowFile},
+use zipunsplitlib::{
+    file::{JoinedFile, MemoryCowFile, Opener},
     split,
 };
+
+use crate::client::{self, CarInfo, FirmwareInfo, NuClient};
 
 const DOWNLOAD_EXT: &str = concat!(env!("CARGO_PKG_NAME"), "_download");
 const EXTRACT_EXT: &str = concat!(env!("CARGO_PKG_NAME"), "_extract");
@@ -130,6 +130,21 @@ pub enum ProgressMessage {
     TotalPostProcess(u64),
     Download(u64),
     PostProcess(u64),
+}
+
+struct SubdirOpener {
+    dir: Arc<Dir>,
+    paths: Vec<PathBuf>,
+}
+
+impl Opener for SubdirOpener {
+    fn open_split(&mut self, index: usize) -> io::Result<std::fs::File> {
+        self.dir.open(&self.paths[index]).map(|f| f.into_std())
+    }
+
+    fn num_splits(&self) -> usize {
+        self.paths.len()
+    }
 }
 
 pub struct Downloader {
@@ -575,17 +590,13 @@ impl Downloader {
         // Instead, we'll create a copy-on-write virtual file that presents them
         // as a single concatenated file and then fix the file offsets in memory
         // so that it looks like a regular zip.
-        let mut joined = JoinedFile::new();
-
-        for i in 0..file_info.download_count() {
-            check_cancel(cancel_signal)?;
-
-            let path = file_info.download_name(i);
-
-            joined
-                .add_file(directory.clone(), Path::new(&path))
-                .with_context(|| format!("Failed to add to joined view: {path}"))?;
-        }
+        let opener = SubdirOpener {
+            dir: directory.clone(),
+            paths: (0..file_info.download_count())
+                .map(|i| PathBuf::from(file_info.download_name(i)))
+                .collect(),
+        };
+        let joined = JoinedFile::new(opener).context("Failed to add splits to joined view")?;
 
         let expected_size = file_info.download_size();
         let actual_size = joined.len();

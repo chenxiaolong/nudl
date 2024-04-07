@@ -901,6 +901,7 @@ dependencies = [
  "tracing-subscriber",
  "urlencoding",
  "zip",
+ "zipunsplitlib",
 ]
 
 [[package]]
@@ -1926,4 +1927,12 @@ dependencies = [
  "crc32fast",
  "crossbeam-utils",
  "flate2",
+]
+
+[[package]]
+name = "zipunsplitlib"
+version = "0.1.0"
+source = "git+https://github.com/chenxiaolong/zipunsplit.git?rev=0449308b5b6ef878b0263c91e852be92f1014a5c#0449308b5b6ef878b0263c91e852be92f1014a5c"
+dependencies = [
+ "thiserror",
 ]
