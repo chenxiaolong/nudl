@@ -2,7 +2,10 @@
 
 nudl (**N**avigation **U**pdate **D**own**l**oader) is an unofficial tool for downloading firmware images for HMG infotainment systems.
 
+NOTE: This tool only supports downloading the same publicly available firmware as what's obtainable with the official Navigation Updater software without logging in.
+
 Features:
+* Runs on Linux, Windows, macOS, and most other desktop OS's
 * Downloads firmware chunks in parallel for faster downloads
 * Interrupted downloads can be resumed
 
@@ -24,6 +27,8 @@ nudl download -b <brand> -m <model> -o <output directory>
 ```
 
 Firmware files are downloaded with 4 parallel connections by default. This can be changed with the `-c`/`--concurrency` argument. To interrupt a download, simply use Ctrl-C as usual. Rerunning the same command will resume the download.
+
+Note that the progress bars may sometimes be misleading (eg. `32.73 GiB / 10.60 GiB`). This is not a bug in the tool. The server is returning incorrect file sizes. However, nudl validates all checksums. If it doesn't fail with an error, then rest assured that all of the downloaded files are valid.
 
 For more information about other command-line arguments, see `--help`.
 
