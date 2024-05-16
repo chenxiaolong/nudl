@@ -158,10 +158,7 @@ pub struct Cli {
     #[arg(long, global = true, value_name = "LEVEL", default_value_t)]
     pub log_level: LogLevel,
 
-    /// Ignore TLS validation for HTTPS connections
-    ///
-    /// By default, all HTTPS connections (eg. to FUS) will validate the TLS
-    /// certificate against the system's CA trust store.
+    /// Ignore TLS certificate validation for HTTPS connections.
     #[arg(long, global = true)]
     pub ignore_tls_validation: bool,
 }

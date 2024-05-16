@@ -56,7 +56,7 @@ pub enum Error {
 
 type Result<T> = std::result::Result<T, Error>;
 
-/// A type representing the Authorization field for FUS requests.
+/// A type representing the Authorization field for NU requests.
 #[derive(Clone, Debug)]
 struct Authorization(NaiveDateTime);
 
