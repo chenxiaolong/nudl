@@ -9,8 +9,8 @@ use std::{
 
 use base64::{engine::general_purpose::STANDARD, Engine};
 use bytes::Bytes;
-use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
 use futures_core::Stream;
+use jiff::{civil::DateTime, Zoned};
 use reqwest::{header, Client, ClientBuilder, RequestBuilder, StatusCode};
 use serde::de::DeserializeOwned;
 use thiserror::Error;
@@ -58,24 +58,24 @@ type Result<T> = std::result::Result<T, Error>;
 
 /// A type representing the Authorization field for NU requests.
 #[derive(Clone, Debug)]
-struct Authorization(NaiveDateTime);
+struct Authorization(DateTime);
 
 impl Authorization {
     /// Construct a new instance based on the current local time.
     fn new() -> Result<Self> {
-        let timestamp = Local::now();
-        Ok(Self::with_timestamp(timestamp))
+        let timestamp = Zoned::now();
+        Ok(Self::with_timestamp(timestamp.datetime()))
     }
 
     /// Construct a new instance with the specified timestamp.
-    fn with_timestamp<Tz: TimeZone>(timestamp: DateTime<Tz>) -> Self {
-        Self(timestamp.naive_local())
+    fn with_timestamp(timestamp: DateTime) -> Self {
+        Self(timestamp)
     }
 }
 
 impl fmt::Display for Authorization {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let date_string = self.0.format("%Y%m%d%H%M%S").to_string();
+        let date_string = self.0.strftime("%Y%m%d%H%M%S").to_string();
         let encrypted = crypto::encrypt(date_string.as_bytes());
         let encoded = STANDARD.encode(encrypted);
 
@@ -623,19 +623,13 @@ impl NuClient {
 
 #[cfg(test)]
 mod tests {
-    use chrono::{FixedOffset, NaiveDate};
+    use jiff::civil::date;
 
     use super::*;
 
     #[test]
     fn test_authorization() {
-        let offset = FixedOffset::east_opt(-5 * 60 * 60).unwrap();
-        let timestamp = NaiveDate::from_ymd_opt(2024, 01, 01)
-            .unwrap()
-            .and_hms_opt(20, 30, 40)
-            .unwrap()
-            .and_local_timezone(offset)
-            .unwrap();
+        let timestamp = date(2024, 1, 1).at(20, 30, 40, 0);
 
         assert_eq!(
             Authorization::with_timestamp(timestamp).to_string(),
