@@ -1,6 +1,7 @@
 ### Unreleased
 
 * Update dependencies
+* Switch from chrono to jiff library for handling timestamps
 
 ### Version 0.1.1
 
