@@ -14,6 +14,7 @@ type Result<T> = std::result::Result<T, Error>;
 
 /// Response data for `/region/status/<country code>` endpoint.
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct RegionStatusData {
     /// Two character ISO country code.
@@ -24,6 +25,7 @@ pub struct RegionStatusData {
 
 /// Response data for `/guid` endpoint.
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct GuidData {
     /// GUID value. This is not a UUID, but rather a human-readable timestamp.
@@ -32,6 +34,7 @@ pub struct GuidData {
 
 /// Car object in response data for `/car/list` endpoint.
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct Car {
     /// Two character brand code.
@@ -73,6 +76,7 @@ pub struct Car {
 
 /// Platform object in response data for `/car/list` endpoint.
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct Platform {
     /// Screenshot filename (without base URL).
@@ -85,6 +89,7 @@ pub struct Platform {
 
 /// Response data for `/car/list` endpoint.
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct CarListData {
     /// List of [`Car`] instances.
@@ -101,6 +106,7 @@ pub struct CarListData {
 
 /// Environment object in response data for `/car/download/<code>` endpoint.
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct Environment {
     /// Empty string.
@@ -134,6 +140,7 @@ pub struct Environment {
 
 /// File object in response data for `/car/download/<code>` endpoint.
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct File {
     /// Empty string.
