@@ -90,19 +90,20 @@ fn stat_if_exists(directory: &Dir, path: &Path) -> Result<Option<Metadata>> {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 struct DownloadParams {
     file_index: usize,
     download_index: u32,
     start_offset: u64,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 struct PostProcessParams {
     file_index: usize,
     clean_only: bool,
 }
 
+#[derive(Debug)]
 struct InitialState {
     /// Number of bytes already downloaded. This is based on the sum of the
     /// raw download sizes.
@@ -248,6 +249,8 @@ impl Downloader {
         for (f_i, file_info) in firmware.files.iter().enumerate() {
             check_cancel(cancel_signal)?;
 
+            let remain = &mut dl_remain[f_i];
+
             let owned_directory: Dir;
             let directory = if let Some(name) = &file_info.directory {
                 match base_directory.open_dir(name) {
@@ -263,6 +266,8 @@ impl Downloader {
                                 download_index: dl_i,
                                 start_offset: 0,
                             });
+
+                            *remain += 1;
                         }
                         continue;
                     }
@@ -289,8 +294,6 @@ impl Downloader {
 
                 continue;
             }
-
-            let remain = &mut dl_remain[f_i];
 
             for dl_i in 0..file_info.download_count() {
                 check_cancel(cancel_signal)?;
@@ -823,6 +826,10 @@ impl Downloader {
                     break;
                 };
 
+                debug!(
+                    "[Download#{}:{}] Task starting",
+                    params.file_index, params.download_index,
+                );
                 dl_running += 1;
                 tasks.spawn(Self::download_task(
                     self.directory.clone(),
@@ -841,6 +848,7 @@ impl Downloader {
                     break;
                 };
 
+                debug!("[PostProcess#{}] Task starting", params.file_index);
                 pp_running += 1;
                 tasks.spawn(Self::post_process_task(
                     self.directory.clone(),
@@ -872,6 +880,7 @@ impl Downloader {
                     // Begin post-processing if there's nothing left to download
                     // for this output file.
                     if state.dl_remain[f_i] == 0 {
+                        debug!("[Download#{f_i}:{dl_i}] Queuing post-processing task");
                         state.pp_tasks.push_back(PostProcessParams {
                             file_index: f_i,
                             clean_only: false,
@@ -879,7 +888,7 @@ impl Downloader {
                     }
                 }
                 TaskResult::PostProcess((f_i, result)) => {
-                    debug!("[Extract#{f_i}] Task completed");
+                    debug!("[PostProcess#{f_i}] Task completed");
                     pp_running -= 1;
                     result?;
                 }
