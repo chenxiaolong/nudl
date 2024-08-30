@@ -357,7 +357,10 @@ impl FileInfo {
 
     /// Get the URL-encoded server path for a specific download.
     pub fn download_remote_path(&self, index: u32) -> String {
-        let path = format!("{}/{}", self.server_path, self.download_name(index));
+        // The server does not accept duplicate separators. The AU region has
+        // trailing separators, but the US region does not.
+        let directory = self.server_path.trim_matches('/');
+        let path = format!("{directory}/{}", self.download_name(index));
 
         match urlencoding::encode(&path) {
             Cow::Borrowed(_) => path,
