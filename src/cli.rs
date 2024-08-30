@@ -101,7 +101,7 @@ pub struct FamilyGroup {
 
     /// Car region.
     ///
-    /// This is an uppercase ISO country code. Autodetected if unspecified.
+    /// This is autodetected (likely by GeoIP) if unspecified.
     #[arg(short, long)]
     pub region: Option<String>,
 }

@@ -28,6 +28,22 @@ To download the latest firmware for a vehicle, run:
 nudl download -b <brand> -m <model> -o <output directory>
 ```
 
+To download firmware for a specific region, pass in `-r <region>`. The default region is determined server-side, likely via GeoIP. The list of known regions are:
+
+* `BR` - Brazil
+* `CA` - Canada
+* `EU` - Europe
+* `ID` - Indonesia
+* `IN` - India
+* `JP` - Japan
+* `KR` - South Korea
+* `ME` - Middle East
+* `NZ` - New Zealand
+* `RU` - Russia & CIS
+* `SG` - Singapore
+* `TR` - Turkey
+* `US` - United States
+
 Firmware files are downloaded with 4 parallel connections by default. This can be changed with the `-c`/`--concurrency` argument. To interrupt a download, simply use Ctrl-C as usual. Rerunning the same command will resume the download.
 
 Note that the progress bars may sometimes be misleading (eg. `32.73 GiB / 10.60 GiB`). This is not a bug in the tool. The server is returning incorrect file sizes. However, nudl validates all checksums. If it doesn't fail with an error, then rest assured that all of the downloaded files are valid.

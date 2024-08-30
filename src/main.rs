@@ -90,7 +90,7 @@ async fn download_subcommand(
     let Some(car) = cars.iter().find(|c| c.id == download_cli.model) else {
         bail!("No firmware found for model: {}", download_cli.model);
     };
-    let firmware = client.get_firmware_info(car).await?;
+    let firmware = client.get_firmware_info(&region, car).await?;
 
     println!("ID: {}", car.id);
     println!("Region: {region}");

@@ -26,6 +26,7 @@ use crate::{
 };
 
 const BASE_URL: &str = "https://api.map-care.com/api/v3";
+const BASE_URL_EU: &str = "https://apieu.map-care.com/api/v3";
 const USER_AGENT: &str = "curl/7.74.0-DEV";
 
 #[derive(Debug, Error)]
@@ -55,6 +56,14 @@ pub enum Error {
 }
 
 type Result<T> = std::result::Result<T, Error>;
+
+/// Get the base URL for a region.
+fn base_url(region: &str) -> &'static str {
+    match region {
+        "EU" | "RU" | "TR" => BASE_URL_EU,
+        _ => BASE_URL,
+    }
+}
 
 /// A type representing the Authorization field for NU requests.
 #[derive(Clone, Debug)]
@@ -519,7 +528,7 @@ impl NuClient {
     /// Request a GUID from the server. A GUID is required for requesting
     /// firmware information with [`Self::get_cars`].
     pub async fn get_guid(&self, region: &str) -> Result<String> {
-        let url = format!("{BASE_URL}/guid/{region}");
+        let url = format!("{}/guid/{region}", base_url(region));
         let data: GuidData = Self::exec(self.client.get(&url)).await?;
 
         Ok(data.guid)
@@ -528,7 +537,7 @@ impl NuClient {
     /// Get the list of cars and information about their latest firmware. Old
     /// firmware versions are not provided by the NU service.
     pub async fn get_cars(&self, region: &str, guid: &str, brand: &str) -> Result<Vec<CarInfo>> {
-        let url = format!("{BASE_URL}/car/list");
+        let url = format!("{}/car/list", base_url(region));
 
         // Only anonymous requests are supported at the moment. There is not
         // really a benefit to using authenticated requests as an end user.
@@ -556,8 +565,8 @@ impl NuClient {
     }
 
     /// Get the list of firmware files for the specified car.
-    pub async fn get_firmware_info(&self, car: &CarInfo) -> Result<FirmwareInfo> {
-        let url = format!("{BASE_URL}/car/download/{}", car.code);
+    pub async fn get_firmware_info(&self, region: &str, car: &CarInfo) -> Result<FirmwareInfo> {
+        let url = format!("{}/car/download/{}", base_url(region), car.code);
 
         let authorization = Authorization::new()?;
         let data: CarDownloadData = Self::exec(
