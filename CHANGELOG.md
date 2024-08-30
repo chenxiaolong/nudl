@@ -1,7 +1,9 @@
 ### Unreleased
 
-* Update dependencies
-* Switch from chrono to jiff library for handling timestamps
+* Update dependencies ([PR #1], [PR #3])
+* Switch from chrono to jiff library for handling timestamps ([PR #2])
+* Strip leading and trailing slashes from the remote path ([PR #4])
+  * Fixes downloads for the Australia region (and possibly more)
 
 ### Version 0.1.1
 
@@ -13,3 +15,8 @@
 ### Version 0.1.0
 
 * Initial release
+
+[PR #1]: https://github.com/chenxiaolong/nudl/pull/1
+[PR #2]: https://github.com/chenxiaolong/nudl/pull/2
+[PR #3]: https://github.com/chenxiaolong/nudl/pull/3
+[PR #4]: https://github.com/chenxiaolong/nudl/pull/4
