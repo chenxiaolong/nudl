@@ -4,6 +4,7 @@
 * Switch from chrono to jiff library for handling timestamps ([PR #2])
 * Strip leading and trailing slashes from the remote path ([PR #4])
   * Fixes downloads for the Australia region (and possibly more)
+* Add support for EU, RU, and TR regions ([PR #5])
 
 ### Version 0.1.1
 
@@ -20,3 +21,4 @@
 [PR #2]: https://github.com/chenxiaolong/nudl/pull/2
 [PR #3]: https://github.com/chenxiaolong/nudl/pull/3
 [PR #4]: https://github.com/chenxiaolong/nudl/pull/4
+[PR #5]: https://github.com/chenxiaolong/nudl/pull/5
