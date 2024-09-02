@@ -9,39 +9,6 @@ use tracing::Level;
 
 const MAX_CONCURRENCY: u8 = 16;
 
-#[derive(Debug, Clone, Copy, ValueEnum)]
-pub enum LogLevel {
-    Trace,
-    Debug,
-    Info,
-    Warn,
-    Error,
-}
-
-impl LogLevel {
-    pub fn as_level(self) -> Level {
-        match self {
-            Self::Trace => Level::TRACE,
-            Self::Debug => Level::DEBUG,
-            Self::Info => Level::INFO,
-            Self::Warn => Level::WARN,
-            Self::Error => Level::ERROR,
-        }
-    }
-}
-
-impl Default for LogLevel {
-    fn default() -> Self {
-        Self::Info
-    }
-}
-
-impl fmt::Display for LogLevel {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.to_possible_value().ok_or(fmt::Error)?.get_name())
-    }
-}
-
 #[derive(Clone, Copy, Debug)]
 pub struct Concurrency(pub u8);
 
@@ -155,8 +122,8 @@ pub struct Cli {
     pub command: Command,
 
     /// Lowest log message severity to output.
-    #[arg(long, global = true, value_name = "LEVEL", default_value_t)]
-    pub log_level: LogLevel,
+    #[arg(long, global = true, value_name = "LEVEL", default_value_t = Level::INFO)]
+    pub log_level: Level,
 
     /// Ignore TLS certificate validation for HTTPS connections.
     #[arg(long, global = true)]

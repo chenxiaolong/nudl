@@ -188,7 +188,7 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt()
         .with_writer(stderr)
         .with_ansi(io::stderr().is_terminal())
-        .with_max_level(cli.log_level.as_level())
+        .with_max_level(cli.log_level)
         .init();
 
     debug!("Arguments: {cli:#?}");
