@@ -1,3 +1,7 @@
+### Unreleased
+
+* Update dependencies ([PR #9])
+
 ### Version 0.1.2
 
 * Update dependencies ([PR #1], [PR #3])
@@ -25,3 +29,4 @@
 [PR #4]: https://github.com/chenxiaolong/nudl/pull/4
 [PR #5]: https://github.com/chenxiaolong/nudl/pull/5
 [PR #6]: https://github.com/chenxiaolong/nudl/pull/6
+[PR #9]: https://github.com/chenxiaolong/nudl/pull/9
