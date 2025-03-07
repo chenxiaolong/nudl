@@ -1,4 +1,4 @@
-### Unreleased
+### Version 0.1.3
 
 * Update dependencies ([PR #9])
 * Fix `nudl list` failing due to a new `releaseDate` field in the `/api/v3/car/list` API ([Issue #8], [PR #10])

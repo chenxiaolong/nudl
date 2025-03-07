@@ -1,8 +1,9 @@
 [package]
 name = "nudl"
-version = "0.1.2"
-authors = ["Andrew Gunnerson <chillermillerlong@hotmail.com>"]
+version = "0.1.3"
 edition = "2021"
+repository = "https://github.com/chenxiaolong/nudl"
+publish = false
 
 [dependencies]
 aes = "0.8.4"
