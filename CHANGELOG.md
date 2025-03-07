@@ -1,6 +1,7 @@
 ### Unreleased
 
 * Update dependencies ([PR #9])
+* Fix `nudl list` failing due to a new `releaseDate` field in the `/api/v3/car/list` API ([Issue #8], [PR #10])
 
 ### Version 0.1.2
 
@@ -23,6 +24,7 @@
 
 * Initial release
 
+[Issue #8]: https://github.com/chenxiaolong/nudl/issues/8
 [PR #1]: https://github.com/chenxiaolong/nudl/pull/1
 [PR #2]: https://github.com/chenxiaolong/nudl/pull/2
 [PR #3]: https://github.com/chenxiaolong/nudl/pull/3
@@ -30,3 +32,4 @@
 [PR #5]: https://github.com/chenxiaolong/nudl/pull/5
 [PR #6]: https://github.com/chenxiaolong/nudl/pull/6
 [PR #9]: https://github.com/chenxiaolong/nudl/pull/9
+[PR #10]: https://github.com/chenxiaolong/nudl/pull/10
