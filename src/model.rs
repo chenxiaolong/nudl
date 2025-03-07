@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Andrew Gunnerson
+// SPDX-FileCopyrightText: 2024-2025 Andrew Gunnerson
 // SPDX-License-Identifier: GPL-3.0-only
 
 use serde::{Deserialize, Serialize};
@@ -72,6 +72,9 @@ pub struct Car {
     pub sw_vers: Vec<String>,
     /// Marketing name including the model name only.
     pub vcl_name: String,
+    /// Unknown format. As of 2025-03-07, some region + brand combinations
+    /// return empty strings, while the rest just omit the field entirely.
+    pub release_date: Option<String>,
 }
 
 /// Platform object in response data for `/car/list` endpoint.
