@@ -1,7 +1,7 @@
 [package]
 name = "nudl"
 version = "0.1.3"
-edition = "2021"
+edition = "2024"
 repository = "https://github.com/chenxiaolong/nudl"
 publish = false
 
@@ -31,4 +31,4 @@ zip = { version = "2.1.5", features = ["deflate"], default-features = false }
 zipunsplitlib = { git = "https://github.com/chenxiaolong/zipunsplit.git", tag = "v0.1.1" }
 
 [dev-dependencies]
-hex-literal = "0.4.1"
+hex-literal = "1.0.0"
