@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Andrew Gunnerson
+// SPDX-FileCopyrightText: 2024-2025 Andrew Gunnerson
 // SPDX-License-Identifier: GPL-3.0-only
 
 use std::{fmt, path::PathBuf, str::FromStr};
@@ -35,15 +35,21 @@ pub enum Brand {
     Genesis,
 }
 
-impl fmt::Display for Brand {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let code = match self {
+impl Brand {
+    pub fn as_code_str(&self) -> &'static str {
+        match self {
             Self::Hyundai => "HM",
             Self::Kia => "KM",
             Self::Genesis => "GN",
-        };
+        }
+    }
 
-        f.write_str(code)
+    pub fn as_pretty_str(&self) -> &'static str {
+        match self {
+            Self::Hyundai => "Hyundai",
+            Self::Kia => "Kia",
+            Self::Genesis => "Genesis",
+        }
     }
 }
 
@@ -57,6 +63,19 @@ impl FromStr for Brand {
             "GN" => Ok(Self::Genesis),
             m => Err(m.to_owned()),
         }
+    }
+}
+
+#[derive(Clone, Copy, Debug, ValueEnum)]
+pub enum OutputFormat {
+    Text,
+    Json,
+    JsonRaw,
+}
+
+impl fmt::Display for OutputFormat {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.to_possible_value().ok_or(fmt::Error)?.get_name())
     }
 }
 
@@ -78,6 +97,14 @@ pub struct FamilyGroup {
 pub struct ListCli {
     #[command(flatten)]
     pub family: FamilyGroup,
+
+    /// Data output format.
+    ///
+    /// `text`: Two columns with the model ID and firmware version.
+    /// `json`: Normalized data from the server containing more information.
+    /// `json-raw`: Raw data from the server.
+    #[arg(short, long, default_value_t = OutputFormat::Text)]
+    pub output: OutputFormat,
 }
 
 /// Download firmware.

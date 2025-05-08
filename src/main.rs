@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Andrew Gunnerson
+// SPDX-FileCopyrightText: 2024-2025 Andrew Gunnerson
 // SPDX-License-Identifier: GPL-3.0-only
 
 mod cli;
@@ -10,7 +10,7 @@ mod model;
 mod progress;
 
 use std::{
-    io::{self, IsTerminal},
+    io::{self, IsTerminal, Write},
     time::Duration,
 };
 
@@ -23,7 +23,7 @@ use tokio::signal::ctrl_c;
 use tracing::debug;
 
 use crate::{
-    cli::{Cli, Command, DownloadCli, ListCli},
+    cli::{Cli, Command, DownloadCli, ListCli, OutputFormat},
     client::{NuClient, NuClientBuilder},
     download::{Downloader, ProgressMessage},
     progress::{ProgressSuspendingStderr, SpeedTracker},
@@ -60,14 +60,30 @@ async fn prepare_client(
 async fn list_subcommand(cli: &Cli, list_cli: &ListCli) -> Result<()> {
     let (client, region, guid) =
         prepare_client(list_cli.family.region.as_deref(), cli.ignore_tls_validation).await?;
+    let brand = list_cli.family.brand.as_code_str();
+    let mut stdout = io::stdout().lock();
 
-    let cars = client
-        .get_cars(&region, &guid, &list_cli.family.brand.to_string())
-        .await?;
-    let max_len = cars.iter().map(|c| c.id.len()).max().unwrap_or_default();
+    match list_cli.output {
+        OutputFormat::Text => {
+            let cars = client.get_cars(&region, &guid, brand).await?;
+            let max_len = cars.iter().map(|c| c.id.len()).max().unwrap_or_default();
 
-    for car in cars {
-        println!("{:width$} {}", car.id, car.version, width = max_len);
+            for car in cars {
+                writeln!(stdout, "{:width$} {}", car.id, car.version, width = max_len)?;
+            }
+        }
+        OutputFormat::Json => {
+            let cars = client.get_cars(&region, &guid, brand).await?;
+
+            serde_json::to_writer_pretty(&mut stdout, &cars)?;
+            writeln!(stdout)?;
+        }
+        OutputFormat::JsonRaw => {
+            let raw_data = client.get_cars_raw(&region, &guid, brand).await?;
+
+            serde_json::to_writer_pretty(&mut stdout, &raw_data)?;
+            writeln!(stdout)?;
+        }
     }
 
     Ok(())
@@ -85,7 +101,7 @@ async fn download_subcommand(
     .await?;
 
     let cars = client
-        .get_cars(&region, &guid, &download_cli.family.brand.to_string())
+        .get_cars(&region, &guid, download_cli.family.brand.as_code_str())
         .await?;
     let Some(car) = cars.iter().find(|c| c.id == download_cli.model) else {
         bail!("No firmware found for model: {}", download_cli.model);
@@ -95,7 +111,7 @@ async fn download_subcommand(
     println!("ID: {}", car.id);
     println!("Region: {region}");
     println!("Brand: {}", car.brand());
-    println!("Model: {}", car.model);
+    println!("Model: {}", car.name);
     println!("Version: {}", car.version);
     println!("Size: {} bytes", firmware.size);
     println!("Files:");

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Andrew Gunnerson
+// SPDX-FileCopyrightText: 2024-2025 Andrew Gunnerson
 // SPDX-License-Identifier: GPL-3.0-only
 
 use std::{
@@ -12,7 +12,7 @@ use bytes::Bytes;
 use futures_core::Stream;
 use jiff::{civil::DateTime, Zoned};
 use reqwest::{header, Client, ClientBuilder, RequestBuilder, StatusCode};
-use serde::de::DeserializeOwned;
+use serde::{de::DeserializeOwned, Serialize};
 use thiserror::Error;
 use tracing::debug;
 
@@ -93,18 +93,42 @@ impl fmt::Display for Authorization {
 }
 
 #[derive(Clone, Debug)]
+pub enum BrandInfo {
+    Known(Brand),
+    Unknown(String),
+}
+
+impl Serialize for BrandInfo {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let brand = match self {
+            Self::Known(b) => b.as_pretty_str(),
+            Self::Unknown(b) => b.as_str(),
+        };
+
+        serializer.serialize_str(brand)
+    }
+}
+
+#[derive(Clone, Debug, Serialize)]
 pub struct CarInfo {
     /// Two character brand code.
-    pub brand: std::result::Result<Brand, String>,
+    pub brand: BrandInfo,
     /// Unique ID for the vehicle.
     pub id: String,
     /// Download code to use for the `/car/download/<code>` endpoint.
+    #[serde(skip)]
     pub code: String,
-    /// Marketing name including the model year and model name.
+    /// Model name only.
     pub model: String,
+    /// Marketing name including the model year and model name.
+    pub name: String,
     /// Firmware version number.
     pub version: String,
     /// Unknown integer value.
+    #[serde(skip)]
     pub mcode: String,
 }
 
@@ -117,11 +141,17 @@ impl TryFrom<Car> for CarInfo {
             return Err(Error::BadFieldLength("sw_vers", car.sw_vers.len()));
         }
 
+        let brand = match Brand::from_str(&car.brand) {
+            Ok(b) => BrandInfo::Known(b),
+            Err(b) => BrandInfo::Unknown(b),
+        };
+
         Ok(Self {
-            brand: Brand::from_str(&car.brand),
+            brand,
             id: car.dest_path,
             code: car.download_code,
-            model: car.dvc_name,
+            model: car.vcl_name,
+            name: car.dvc_name,
             version: car.sw_vers.into_iter().next().unwrap(),
             mcode: car.mcode,
         })
@@ -129,10 +159,10 @@ impl TryFrom<Car> for CarInfo {
 }
 
 impl CarInfo {
-    pub fn brand(&self) -> String {
+    pub fn brand(&self) -> &str {
         match &self.brand {
-            Ok(b) => b.to_string(),
-            Err(b) => b.clone(),
+            BrandInfo::Known(b) => b.as_code_str(),
+            BrandInfo::Unknown(b) => b.as_str(),
         }
     }
 }
@@ -534,9 +564,8 @@ impl NuClient {
         Ok(data.guid)
     }
 
-    /// Get the list of cars and information about their latest firmware. Old
-    /// firmware versions are not provided by the NU service.
-    pub async fn get_cars(&self, region: &str, guid: &str, brand: &str) -> Result<Vec<CarInfo>> {
+    /// Get the raw data from the `/car/list` API.
+    pub async fn get_cars_raw(&self, region: &str, guid: &str, brand: &str) -> Result<CarListData> {
         let url = format!("{}/car/list", base_url(region));
 
         // Only anonymous requests are supported at the moment. There is not
@@ -553,13 +582,20 @@ impl NuClient {
         };
 
         let authorization = Authorization::new()?;
-        let data: CarListData = Self::exec(
+
+        Self::exec(
             self.client
                 .post(&url)
                 .header(header::AUTHORIZATION, authorization.to_string())
                 .json(&request_json),
         )
-        .await?;
+        .await
+    }
+
+    /// Get the list of cars and information about their latest firmware. Old
+    /// firmware versions are not provided by the NU service.
+    pub async fn get_cars(&self, region: &str, guid: &str, brand: &str) -> Result<Vec<CarInfo>> {
+        let data = self.get_cars_raw(region, guid, brand).await?;
 
         data.cars.into_iter().map(CarInfo::try_from).collect()
     }

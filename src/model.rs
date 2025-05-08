@@ -33,7 +33,7 @@ pub struct GuidData {
 }
 
 /// Car object in response data for `/car/list` endpoint.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[allow(dead_code)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct Car {
@@ -78,7 +78,7 @@ pub struct Car {
 }
 
 /// Platform object in response data for `/car/list` endpoint.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[allow(dead_code)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct Platform {
@@ -91,7 +91,7 @@ pub struct Platform {
 }
 
 /// Response data for `/car/list` endpoint.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[allow(dead_code)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct CarListData {
