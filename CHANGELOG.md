@@ -1,4 +1,4 @@
-### Unreleased
+### Version 0.1.4
 
 * Add support for `-o json` and `-o json-raw` in `nudl list` ([PR #11])
 * Update dependencies ([PR #12])
