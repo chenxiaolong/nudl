@@ -1,5 +1,6 @@
 ### Unreleased
 
+* Show better error message when the server returns an invalid autodetected region ([Issue #13], [PR #14])
 * Update dependencies ([PR #15])
 
 ### Version 0.1.4
@@ -34,6 +35,7 @@
 * Initial release
 
 [Issue #8]: https://github.com/chenxiaolong/nudl/issues/8
+[Issue #13]: https://github.com/chenxiaolong/nudl/issues/13
 [PR #1]: https://github.com/chenxiaolong/nudl/pull/1
 [PR #2]: https://github.com/chenxiaolong/nudl/pull/2
 [PR #3]: https://github.com/chenxiaolong/nudl/pull/3
@@ -44,4 +46,5 @@
 [PR #10]: https://github.com/chenxiaolong/nudl/pull/10
 [PR #11]: https://github.com/chenxiaolong/nudl/pull/11
 [PR #12]: https://github.com/chenxiaolong/nudl/pull/12
+[PR #14]: https://github.com/chenxiaolong/nudl/pull/14
 [PR #15]: https://github.com/chenxiaolong/nudl/pull/15
