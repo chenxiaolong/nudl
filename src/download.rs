@@ -6,13 +6,13 @@ use std::{
     io::{self, Read, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
     time::Duration,
 };
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use cap_std::fs::{Dir, Metadata, OpenOptions};
 use crc32fast::Hasher;
 use tokio::{
@@ -272,7 +272,7 @@ impl Downloader {
                         continue;
                     }
                     Err(e) => {
-                        return Err(e).with_context(|| format!("Failed to open directory: {name}"))
+                        return Err(e).with_context(|| format!("Failed to open directory: {name}"));
                     }
                 }
             } else {

@@ -14,7 +14,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use cap_std::{ambient_authority, fs::Dir};
 use clap::Parser;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
@@ -23,8 +23,8 @@ use tokio::signal::ctrl_c;
 use tracing::debug;
 
 use crate::{
-    cli::{Cli, Command, DownloadCli, ListCli, OutputFormat},
-    client::{NuClient, NuClientBuilder},
+    cli::{Brand, Cli, Command, DownloadCli, ListCli, OutputFormat},
+    client::{AutodetectedRegion, NuClient, NuClientBuilder},
     download::{Downloader, ProgressMessage},
     progress::{ProgressSuspendingStderr, SpeedTracker},
 };
@@ -41,6 +41,7 @@ fn progress_style() -> ProgressStyle {
 }
 
 async fn prepare_client(
+    brand: Brand,
     region: Option<&str>,
     ignore_tls_validation: bool,
 ) -> Result<(NuClient, String, String)> {
@@ -50,7 +51,14 @@ async fn prepare_client(
 
     let region = match region {
         Some(r) => r.to_owned(),
-        None => client.get_region().await?,
+        None => match client.get_region(brand.as_code_str()).await? {
+            AutodetectedRegion::Valid(r) => r,
+            AutodetectedRegion::Invalid(r) => {
+                bail!(
+                    "No data available for autodetected region: {r}. Please manually specify a region."
+                );
+            }
+        },
     };
     let guid = client.get_guid(&region).await?;
 
@@ -58,8 +66,12 @@ async fn prepare_client(
 }
 
 async fn list_subcommand(cli: &Cli, list_cli: &ListCli) -> Result<()> {
-    let (client, region, guid) =
-        prepare_client(list_cli.family.region.as_deref(), cli.ignore_tls_validation).await?;
+    let (client, region, guid) = prepare_client(
+        list_cli.family.brand,
+        list_cli.family.region.as_deref(),
+        cli.ignore_tls_validation,
+    )
+    .await?;
     let brand = list_cli.family.brand.as_code_str();
     let mut stdout = io::stdout().lock();
 
@@ -95,6 +107,7 @@ async fn download_subcommand(
     bars: MultiProgress,
 ) -> Result<()> {
     let (client, region, guid) = prepare_client(
+        download_cli.family.brand,
         download_cli.family.region.as_deref(),
         cli.ignore_tls_validation,
     )

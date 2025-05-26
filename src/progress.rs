@@ -8,7 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use indicatif::{style::ProgressTracker, BinaryBytes, MultiProgress, ProgressState};
+use indicatif::{BinaryBytes, MultiProgress, ProgressState, style::ProgressTracker};
 use tracing_subscriber::fmt::MakeWriter;
 
 /// Type that receives progress values and buffers them to compute the average

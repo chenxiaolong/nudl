@@ -7,12 +7,12 @@ use std::{
     str::{self, FromStr},
 };
 
-use base64::{engine::general_purpose::STANDARD, Engine};
+use base64::{Engine, engine::general_purpose::STANDARD};
 use bytes::Bytes;
 use futures_core::Stream;
-use jiff::{civil::DateTime, Zoned};
-use reqwest::{header, Client, ClientBuilder, RequestBuilder, StatusCode};
-use serde::{de::DeserializeOwned, Serialize};
+use jiff::{Zoned, civil::DateTime};
+use reqwest::{Client, ClientBuilder, RequestBuilder, StatusCode, header};
+use serde::{Serialize, de::DeserializeOwned};
 use thiserror::Error;
 use tracing::debug;
 
@@ -485,6 +485,12 @@ impl TryFrom<CarDownloadData> for FirmwareInfo {
     }
 }
 
+#[derive(Clone, Debug)]
+pub enum AutodetectedRegion {
+    Valid(String),
+    Invalid(String),
+}
+
 /// Builder type for [`NuClient`].
 #[derive(Clone)]
 pub struct NuClientBuilder {
@@ -547,12 +553,23 @@ impl NuClient {
     }
 
     /// Query the current region. This is likely based on GeoIP.
-    pub async fn get_region(&self) -> Result<String> {
+    pub async fn get_region(&self, brand: &str) -> Result<AutodetectedRegion> {
         // The last path component doesn't matter.
         let url = format!("{BASE_URL}/region/status/KR");
         let data: RegionStatusData = Self::exec(self.client.get(&url)).await?;
 
-        Ok(data.region)
+        let platform_url = format!(
+            "{}/car/platform/{brand}/{}",
+            base_url(&data.region),
+            data.region
+        );
+        let platforms: Vec<()> = Self::exec(self.client.get(&platform_url)).await?;
+
+        if platforms.is_empty() {
+            Ok(AutodetectedRegion::Invalid(data.region))
+        } else {
+            Ok(AutodetectedRegion::Valid(data.region))
+        }
     }
 
     /// Request a GUID from the server. A GUID is required for requesting
