@@ -1,3 +1,7 @@
+### Unreleased
+
+* Update dependencies ([PR #15])
+
 ### Version 0.1.4
 
 * Add support for `-o json` and `-o json-raw` in `nudl list` ([PR #11])
@@ -40,3 +44,4 @@
 [PR #10]: https://github.com/chenxiaolong/nudl/pull/10
 [PR #11]: https://github.com/chenxiaolong/nudl/pull/11
 [PR #12]: https://github.com/chenxiaolong/nudl/pull/12
+[PR #15]: https://github.com/chenxiaolong/nudl/pull/15
