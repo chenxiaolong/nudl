@@ -1,4 +1,4 @@
-### Unreleased
+### Version 0.1.5
 
 * Show better error message when the server returns an invalid autodetected region ([Issue #13], [PR #14])
 * Update dependencies ([PR #15])
