@@ -12,7 +12,10 @@ use bytes::Bytes;
 use futures_core::Stream;
 use jiff::{Zoned, civil::DateTime};
 use reqwest::{Client, ClientBuilder, RequestBuilder, StatusCode, header};
-use serde::{Serialize, de::DeserializeOwned};
+use serde::{
+    Serialize,
+    de::{DeserializeOwned, IgnoredAny},
+};
 use thiserror::Error;
 use tracing::debug;
 
@@ -563,7 +566,7 @@ impl NuClient {
             base_url(&data.region),
             data.region
         );
-        let platforms: Vec<()> = Self::exec(self.client.get(&platform_url)).await?;
+        let platforms: Vec<IgnoredAny> = Self::exec(self.client.get(&platform_url)).await?;
 
         if platforms.is_empty() {
             Ok(AutodetectedRegion::Invalid(data.region))
