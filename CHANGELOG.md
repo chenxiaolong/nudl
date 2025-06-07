@@ -1,4 +1,4 @@
-### Unreleased
+### Version 0.1.6
 
 * Fix error when region auto-detection returns a valid region ([Issue #16], [PR #17])
 
