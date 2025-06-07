@@ -1,3 +1,7 @@
+### Unreleased
+
+* Fix error when region auto-detection returns a valid region ([Issue #16], [PR #17])
+
 ### Version 0.1.5
 
 * Show better error message when the server returns an invalid autodetected region ([Issue #13], [PR #14])
@@ -36,6 +40,7 @@
 
 [Issue #8]: https://github.com/chenxiaolong/nudl/issues/8
 [Issue #13]: https://github.com/chenxiaolong/nudl/issues/13
+[Issue #16]: https://github.com/chenxiaolong/nudl/issues/16
 [PR #1]: https://github.com/chenxiaolong/nudl/pull/1
 [PR #2]: https://github.com/chenxiaolong/nudl/pull/2
 [PR #3]: https://github.com/chenxiaolong/nudl/pull/3
@@ -48,3 +53,4 @@
 [PR #12]: https://github.com/chenxiaolong/nudl/pull/12
 [PR #14]: https://github.com/chenxiaolong/nudl/pull/14
 [PR #15]: https://github.com/chenxiaolong/nudl/pull/15
+[PR #17]: https://github.com/chenxiaolong/nudl/pull/17
