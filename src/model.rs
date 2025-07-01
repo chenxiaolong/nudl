@@ -130,6 +130,8 @@ pub struct Environment {
     pub download_prefix: String,
     /// Base URL for all firmware file downloads.
     pub download_root_path: String,
+    /// Empty string.
+    pub is_online_navi: String,
     /// Platform technical name (eg. `GEN5_WIDE`). Appears to be a suffix of
     /// [`Self::dest_root_path`].
     pub model_prefix: String,
@@ -159,6 +161,10 @@ pub struct File {
     pub file_path: String,
     /// Size of the tar file inside the zip.
     pub file_size: String,
+    /// Empty string.
+    pub region: String,
+    /// Empty string.
+    pub sub_region: String,
     /// Unknown version number. Does not appear to correlate with other version
     /// numbers.
     pub version: String,
