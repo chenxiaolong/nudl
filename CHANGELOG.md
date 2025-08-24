@@ -1,3 +1,7 @@
+### Unreleased
+
+* Update dependencies ([PR #22])
+
 ### Version 0.1.7
 
 * Fix download errors due to newly added fields for the `/api/v3/car/download/<id>` API ([Issue #18], [PR #19])
@@ -60,3 +64,4 @@
 [PR #15]: https://github.com/chenxiaolong/nudl/pull/15
 [PR #17]: https://github.com/chenxiaolong/nudl/pull/17
 [PR #19]: https://github.com/chenxiaolong/nudl/pull/19
+[PR #22]: https://github.com/chenxiaolong/nudl/pull/22
