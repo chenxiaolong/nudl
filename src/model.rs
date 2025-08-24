@@ -206,10 +206,10 @@ impl<D> ResponseData<D> {
     /// Return error if [`Self::resp_code`] does not represent a successful
     /// response.
     pub fn error_for_status(&self) -> Result<()> {
-        if let Ok(code) = self.resp_code.parse::<u16>() {
-            if code == 0 {
-                return Ok(());
-            }
+        if let Ok(code) = self.resp_code.parse::<u16>()
+            && code == 0
+        {
+            return Ok(());
         }
 
         Err(Error::BadResponse(

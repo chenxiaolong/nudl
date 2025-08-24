@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Andrew Gunnerson
+// SPDX-FileCopyrightText: 2024-2025 Andrew Gunnerson
 // SPDX-License-Identifier: GPL-3.0-only
 
 use std::{
@@ -15,6 +15,8 @@ use std::{
 use anyhow::{Context, Result, bail};
 use cap_std::fs::{Dir, Metadata, OpenOptions};
 use crc32fast::Hasher;
+use flate2::read::DeflateDecoder;
+use rawzip::{CompressionMethod, RECOMMENDED_BUFFER_SIZE, ZipArchive};
 use tokio::{
     fs::File,
     io::{AsyncSeekExt, AsyncWriteExt},
@@ -24,7 +26,6 @@ use tokio::{
 };
 use tokio_stream::StreamExt;
 use tracing::{debug, trace, warn};
-use zip::ZipArchive;
 use zipunsplitlib::{
     file::{JoinedFile, MemoryCowFile, Opener},
     split,
@@ -73,10 +74,10 @@ pub fn check_cancel(cancel_signal: &AtomicBool) -> io::Result<()> {
 
 /// Delete a file, but don't error out if the path doesn't exist.
 fn delete_if_exists(directory: &Dir, path: &Path) -> Result<()> {
-    if let Err(e) = directory.remove_file(path) {
-        if e.kind() != io::ErrorKind::NotFound {
-            return Err(e).context(format!("Failed to delete file: {path:?}"));
-        }
+    if let Err(e) = directory.remove_file(path)
+        && e.kind() != io::ErrorKind::NotFound
+    {
+        return Err(e).context(format!("Failed to delete file: {path:?}"));
     }
 
     Ok(())
@@ -619,29 +620,51 @@ impl Downloader {
 
         check_cancel(cancel_signal)?;
 
-        let mut zip = ZipArchive::new(cow_file)?;
-        if zip.len() != 1 {
-            bail!(
-                "Expected only a single entry in split zip, but have {}: {}",
-                zip.len(),
-                file_info.path(),
-            );
+        let mut buffer = vec![0u8; RECOMMENDED_BUFFER_SIZE];
+        let zip = ZipArchive::from_seekable(cow_file, &mut buffer)?;
+        let mut entries = zip.entries(&mut buffer);
+        let mut entry_info = None;
+
+        while let Some(cd_entry) = entries.next_entry().context("Failed to list zip entries")? {
+            let path = cd_entry.file_path();
+            let path = str::from_utf8(path.as_bytes())
+                .with_context(|| format!("Non-UTF-8 zip entry path: {path:?}"))?;
+
+            if path == file_info.name {
+                entry_info = Some((
+                    cd_entry.wayfinder(),
+                    cd_entry.compression_method(),
+                    cd_entry.crc32(),
+                ));
+            } else {
+                bail!("Unexpected zip entry: {path:?}");
+            }
         }
 
-        let mut entry = zip
-            .by_name(&file_info.name)
+        let Some((wayfinder, compression_method, crc32)) = entry_info else {
+            bail!("Missing zip entry: {}", file_info.name);
+        };
+
+        let entry = zip
+            .get_entry(wayfinder)
             .with_context(|| format!("Failed to open zip entry: {}", file_info.name))?;
 
-        // Only need to check the metadata field. ZipArchive verifies the actual
-        // digest after reading to EOF.
-        if entry.crc32() != file_info.crc32 {
+        // Only need to check the metadata field. ZipVerifier verifies the
+        // actual digest after reading to EOF.
+        if crc32 != file_info.crc32 {
             bail!(
-                "Expected CRC32 {:08X}, but have {:08X}: {}",
+                "Expected CRC32 {:08X}, but have {crc32:08X}: {}",
                 file_info.crc32,
-                entry.crc32(),
                 file_info.name,
             );
         }
+
+        let reader: Box<dyn Read> = match compression_method {
+            CompressionMethod::Store => Box::new(entry.reader()),
+            CompressionMethod::Deflate => Box::new(DeflateDecoder::new(entry.reader())),
+            c => bail!("Unsupported zip compression method: {c:?}"),
+        };
+        let mut reader = entry.verifying_reader(reader);
 
         let extract_path = format!("{}.{EXTRACT_EXT}", file_info.name);
         let mut file = directory
@@ -652,7 +675,7 @@ impl Downloader {
         loop {
             check_cancel(cancel_signal)?;
 
-            let n = entry
+            let n = reader
                 .read(&mut buf)
                 .with_context(|| format!("Failed to read split files: {}", file_info.path()))?;
             if n == 0 {

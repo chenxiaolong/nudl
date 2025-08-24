@@ -58,10 +58,10 @@ impl SpeedTracker {
 
     /// Get progress speed as the number of progress units per second.
     fn units_per_sec(&self) -> f64 {
-        if let (Some(f), Some(b)) = (self.buf.front(), self.buf.back()) {
-            if f != b {
-                return (b.1 - f.1) as f64 / (b.0 - f.0).as_secs_f64();
-            }
+        if let (Some(f), Some(b)) = (self.buf.front(), self.buf.back())
+            && f != b
+        {
+            return (b.1 - f.1) as f64 / (b.0 - f.0).as_secs_f64();
         }
 
         0.0

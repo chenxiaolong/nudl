@@ -203,17 +203,16 @@ impl ZipNamingScheme {
             // The legacy naming scheme is 1-based and is padded to at least 3
             // digits. Each file has the number before the file extension.
             let count_str = format!("{count:0width$}", width = digits as usize);
-            if let Some((prefix, suffix)) = last.rsplit_once(&count_str) {
-                if prefix.len() + suffix.len() == first.len()
-                    && first.starts_with(prefix)
-                    && first.ends_with(suffix)
-                {
-                    return Ok(Self::Legacy {
-                        prefix: prefix.to_owned(),
-                        suffix: suffix.to_owned(),
-                        digits,
-                    });
-                }
+            if let Some((prefix, suffix)) = last.rsplit_once(&count_str)
+                && prefix.len() + suffix.len() == first.len()
+                && first.starts_with(prefix)
+                && first.ends_with(suffix)
+            {
+                return Ok(Self::Legacy {
+                    prefix: prefix.to_owned(),
+                    suffix: suffix.to_owned(),
+                    digits,
+                });
             }
 
             // The modern naming scheme is uses the same scheme as the Info-ZIP
@@ -228,13 +227,13 @@ impl ZipNamingScheme {
             let last_ext = format!(".z{:02}", count - 1);
             let first_no_ext = first.strip_suffix(".zip");
             let last_no_ext = last.strip_suffix(&last_ext);
-            if let Some(base_name) = first_no_ext {
-                if first_no_ext == last_no_ext {
-                    return Ok(Self::Standard {
-                        base_name: base_name.to_owned(),
-                        count,
-                    });
-                }
+            if let Some(base_name) = first_no_ext
+                && first_no_ext == last_no_ext
+            {
+                return Ok(Self::Standard {
+                    base_name: base_name.to_owned(),
+                    count,
+                });
             }
         }
 
