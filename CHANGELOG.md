@@ -1,3 +1,7 @@
+### Unreleased
+
+* Add `-n`/`--nudl` and `-v`/`--version` to `nudl download` to disambiguate models with multiple variants sharing the same model ID (e.g., HEV vs PHEV) ([PR #23])
+
 ### Version 0.1.8
 
 * Update dependencies ([PR #22])
@@ -65,7 +69,4 @@
 [PR #17]: https://github.com/chenxiaolong/nudl/pull/17
 [PR #19]: https://github.com/chenxiaolong/nudl/pull/19
 [PR #22]: https://github.com/chenxiaolong/nudl/pull/22
-### Version 0.1.9
-
-* Add `--fw-version` to `nudl download` to disambiguate models with multiple variants sharing the same model ID (e.g., HEV vs PHEV)
-* Error on ambiguous model selection without `--fw-version` and list the available firmware versions to choose from
+[PR #23]: https://github.com/chenxiaolong/nudl/pull/23
