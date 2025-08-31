@@ -1,4 +1,4 @@
-### Unreleased
+### Version 0.1.9
 
 * Add `-n`/`--nudl` and `-v`/`--version` to `nudl download` to disambiguate models with multiple variants sharing the same model ID (e.g., HEV vs PHEV) ([PR #23])
 
