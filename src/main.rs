@@ -116,8 +116,41 @@ async fn download_subcommand(
     let cars = client
         .get_cars(&region, &guid, download_cli.family.brand.as_code_str())
         .await?;
-    let Some(car) = cars.iter().find(|c| c.id == download_cli.model) else {
+    let candidates: Vec<_> = cars.iter().filter(|c| c.id == download_cli.model).collect();
+    if candidates.is_empty() {
         bail!("No firmware found for model: {}", download_cli.model);
+    }
+
+    let car = if let Some(ref ver) = download_cli.fw_version {
+        match candidates.iter().find(|c| &c.version == ver) {
+            Some(c) => *c,
+            None => {
+                let available: Vec<&str> = candidates.iter().map(|c| c.version.as_str()).collect();
+                bail!(
+                    "No firmware found for model '{}' with version '{}'. Available versions: {}",
+                    download_cli.model,
+                    ver,
+                    available.join(", ")
+                );
+            }
+        }
+    } else {
+        if candidates.len() > 1 {
+            let available: Vec<&str> = candidates.iter().map(|c| c.version.as_str()).collect();
+
+            let mut msg = format!(
+                "Multiple firmware variants found for model '{}'.\nPlease specify --fw-version with one of the following:\n",
+                download_cli.model
+            );
+            for v in &available {
+                msg.push_str(v);
+                msg.push('\n');
+            }
+            msg.push('\n');
+
+            bail!(msg);
+        }
+        candidates[0]
     };
     let firmware = client.get_firmware_info(&region, car).await?;
 

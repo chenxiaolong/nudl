@@ -117,6 +117,13 @@ pub struct DownloadCli {
     #[arg(short, long)]
     pub model: String,
 
+    /// Firmware version to disambiguate model variants.
+    ///
+    /// Only needed when multiple variants share the same model ID. Use the
+    /// version string printed by `nudl list`.
+    #[arg(long = "fw-version")]
+    pub fw_version: Option<String>,
+
     /// Output directory.
     #[arg(short, long, value_parser, default_value = ".")]
     pub output: PathBuf,

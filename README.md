@@ -28,6 +28,12 @@ To download the latest firmware for a vehicle, run:
 nudl download -b <brand> -m <model> -o <output directory>
 ```
 
+If a model has multiple variants that share the same model ID (for example, HEV vs PHEV), `nudl download` will error and list the available firmware versions. Disambiguate by specifying the exact firmware version shown by `nudl list`:
+
+```
+nudl download -b <brand> -m <model> --fw-version <firmware version>
+```
+
 To download firmware for a specific region, pass in `-r <region>`. The default region is determined server-side, likely via GeoIP. The list of known regions are:
 
 * `BR` - Brazil
