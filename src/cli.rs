@@ -7,6 +7,8 @@ use anyhow::bail;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use tracing::Level;
 
+use crate::Selector;
+
 const MAX_CONCURRENCY: u8 = 16;
 
 #[derive(Clone, Copy, Debug)]
@@ -107,22 +109,51 @@ pub struct ListCli {
     pub output: OutputFormat,
 }
 
+#[derive(Debug, Args)]
+#[group(required = true)]
+pub struct FirmwareSelectorGroup {
+    /// Select firmware by car model ID.
+    ///
+    /// The same car model ID may be used for multiple variants, like HEV vs.
+    /// PHEV. To disambiguate, use `--version`.
+    #[arg(short, long)]
+    pub model: Option<String>,
+
+    /// Select firmware by marketing name.
+    #[arg(short, long)]
+    pub name: Option<String>,
+
+    /// Select firmware by version number.
+    #[arg(short, long)]
+    pub version: Option<String>,
+}
+
+impl FirmwareSelectorGroup {
+    pub fn to_selectors(&self) -> Vec<Selector> {
+        let mut selectors = vec![];
+
+        if let Some(model) = &self.model {
+            selectors.push(Selector::Model(model.clone()));
+        }
+        if let Some(name) = &self.name {
+            selectors.push(Selector::Name(name.clone()));
+        }
+        if let Some(version) = &self.version {
+            selectors.push(Selector::Version(version.clone()));
+        }
+
+        selectors
+    }
+}
+
 /// Download firmware.
 #[derive(Debug, Parser)]
 pub struct DownloadCli {
     #[command(flatten)]
     pub family: FamilyGroup,
 
-    /// Car model.
-    #[arg(short, long)]
-    pub model: String,
-
-    /// Firmware version to disambiguate model variants.
-    ///
-    /// Only needed when multiple variants share the same model ID. Use the
-    /// version string printed by `nudl list`.
-    #[arg(long = "fw-version")]
-    pub fw_version: Option<String>,
+    #[command(flatten)]
+    pub selector: FirmwareSelectorGroup,
 
     /// Output directory.
     #[arg(short, long, value_parser, default_value = ".")]
