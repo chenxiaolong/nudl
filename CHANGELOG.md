@@ -1,4 +1,4 @@
-### Unreleased
+### Version 0.1.10
 
 * Add support for models with multiple firmware versions ([Issue #24], [PR #25])
 * Update dependencies ([PR #26])
