@@ -135,7 +135,7 @@ pub struct CarInfo {
     pub mcode: String,
 }
 
-impl TryFrom<Car> for CarInfo {
+impl TryFrom<Car> for Vec<CarInfo> {
     type Error = Error;
 
     fn try_from(car: Car) -> Result<Self> {
@@ -149,15 +149,26 @@ impl TryFrom<Car> for CarInfo {
             Err(b) => BrandInfo::Unknown(b),
         };
 
-        Ok(Self {
-            brand,
-            id: car.dest_path,
-            code: car.download_code,
-            model: car.vcl_name,
-            name: car.dvc_name,
-            version: car.sw_vers.into_iter().next().unwrap(),
-            mcode: car.mcode,
-        })
+        // The marketing name sometimes includes NBSP (\u00a0).
+        let name = car
+            .dvc_name
+            .chars()
+            .map(|c| if c.is_whitespace() { ' ' } else { c })
+            .collect::<String>();
+
+        Ok(car
+            .sw_vers
+            .into_iter()
+            .map(|version| CarInfo {
+                brand: brand.clone(),
+                id: car.dest_path.clone(),
+                code: car.download_code.clone(),
+                model: car.vcl_name.clone(),
+                name: name.clone(),
+                version,
+                mcode: car.mcode.clone(),
+            })
+            .collect())
     }
 }
 
@@ -615,8 +626,13 @@ impl NuClient {
     /// firmware versions are not provided by the NU service.
     pub async fn get_cars(&self, region: &str, guid: &str, brand: &str) -> Result<Vec<CarInfo>> {
         let data = self.get_cars_raw(region, guid, brand).await?;
+        let mut cars = vec![];
 
-        data.cars.into_iter().map(CarInfo::try_from).collect()
+        for car in data.cars {
+            cars.extend(Vec::<CarInfo>::try_from(car)?);
+        }
+
+        Ok(cars)
     }
 
     /// Get the list of firmware files for the specified car.
