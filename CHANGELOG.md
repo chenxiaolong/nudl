@@ -1,3 +1,7 @@
+### Unreleased
+
+* Update dependencies ([PR #26])
+
 ### Version 0.1.9
 
 * Add `-n`/`--nudl` and `-v`/`--version` to `nudl download` to disambiguate models with multiple variants sharing the same model ID (e.g., HEV vs PHEV) ([PR #23])
@@ -70,3 +74,4 @@
 [PR #19]: https://github.com/chenxiaolong/nudl/pull/19
 [PR #22]: https://github.com/chenxiaolong/nudl/pull/22
 [PR #23]: https://github.com/chenxiaolong/nudl/pull/23
+[PR #26]: https://github.com/chenxiaolong/nudl/pull/26
