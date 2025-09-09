@@ -1,5 +1,6 @@
 ### Unreleased
 
+* Add support for models with multiple firmware versions ([Issue #24], [PR #25])
 * Update dependencies ([PR #26])
 
 ### Version 0.1.9
@@ -58,6 +59,7 @@
 [Issue #13]: https://github.com/chenxiaolong/nudl/issues/13
 [Issue #16]: https://github.com/chenxiaolong/nudl/issues/16
 [Issue #18]: https://github.com/chenxiaolong/nudl/issues/18
+[Issue #24]: https://github.com/chenxiaolong/nudl/issues/24
 [PR #1]: https://github.com/chenxiaolong/nudl/pull/1
 [PR #2]: https://github.com/chenxiaolong/nudl/pull/2
 [PR #3]: https://github.com/chenxiaolong/nudl/pull/3
@@ -74,4 +76,5 @@
 [PR #19]: https://github.com/chenxiaolong/nudl/pull/19
 [PR #22]: https://github.com/chenxiaolong/nudl/pull/22
 [PR #23]: https://github.com/chenxiaolong/nudl/pull/23
+[PR #25]: https://github.com/chenxiaolong/nudl/pull/25
 [PR #26]: https://github.com/chenxiaolong/nudl/pull/26
