@@ -1,3 +1,7 @@
+### Unreleased
+
+* Fix `.ver` file creation when downloading firmware for models with multiple firmware versions ([Issue #24], [PR #27])
+
 ### Version 0.1.10
 
 * Add support for models with multiple firmware versions ([Issue #24], [PR #25])
@@ -78,3 +82,4 @@
 [PR #23]: https://github.com/chenxiaolong/nudl/pull/23
 [PR #25]: https://github.com/chenxiaolong/nudl/pull/25
 [PR #26]: https://github.com/chenxiaolong/nudl/pull/26
+[PR #27]: https://github.com/chenxiaolong/nudl/pull/27
