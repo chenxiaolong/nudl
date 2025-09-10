@@ -104,16 +104,17 @@ async fn list_subcommand(cli: &Cli, list_cli: &ListCli) -> Result<()> {
             )?;
 
             for car in cars {
-                writeln!(
-                    stdout,
-                    "{:id_width$} \"{}\"{:name_padding$} {}",
-                    car.id,
-                    car.name,
-                    "",
-                    car.version,
-                    id_width = model_max_len,
-                    name_padding = name_max_len - car.name.len(),
-                )?;
+                for version in &car.versions {
+                    writeln!(
+                        stdout,
+                        "{:id_width$} \"{}\"{:name_padding$} {version}",
+                        car.id,
+                        car.name,
+                        "",
+                        id_width = model_max_len,
+                        name_padding = name_max_len - car.name.len(),
+                    )?;
+                }
             }
         }
         OutputFormat::Json => {
@@ -158,18 +159,18 @@ pub enum Selector {
 
 impl Selector {
     fn all_for_car(car: &CarInfo) -> Vec<Selector> {
-        vec![
-            Self::Model(car.id.clone()),
-            Self::Name(car.name.clone()),
-            Self::Version(car.version.clone()),
-        ]
+        let mut result = vec![Self::Model(car.id.clone()), Self::Name(car.name.clone())];
+
+        result.extend(car.versions.iter().cloned().map(Self::Version));
+
+        result
     }
 
     fn matches_car(&self, car: &CarInfo) -> bool {
         match self {
             Self::Model(m) => car.id == *m,
             Self::Name(n) => car.name == *n,
-            Self::Version(v) => car.version == *v,
+            Self::Version(v) => car.versions.contains(v),
         }
     }
 }
@@ -252,7 +253,7 @@ async fn download_subcommand(
     println!("Region: {region}");
     println!("Brand: {}", car.brand());
     println!("Model: {}", car.name);
-    println!("Version: {}", car.version);
+    println!("Version: {}", join(&car.versions, ", "));
     println!("Size: {} bytes", firmware.size);
     println!("Files:");
 

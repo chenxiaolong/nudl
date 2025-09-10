@@ -196,7 +196,10 @@ impl Downloader {
             &mut result,
             "+|{}|{}|{}|{}|{}|1",
             firmware.update_version,
-            car.version,
+            // The official app always puts the first listed version number in
+            // this file. All output files are exactly identical regardless of
+            // which firmware version the user selects for the same model ID.
+            car.versions[0],
             car.brand(),
             car.id,
             car.mcode,
