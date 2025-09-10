@@ -1,4 +1,4 @@
-### Unreleased
+### Version 0.1.11
 
 * Fix `.ver` file creation when downloading firmware for models with multiple firmware versions ([Issue #24], [PR #27])
 
