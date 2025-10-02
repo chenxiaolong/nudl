@@ -1,4 +1,4 @@
-### Unreleased
+### Version 0.1.12
 
 * Use Unicode width for text alignment ([PR #31])
   * Fixes misaligned Korean text in `nudl list -r KR`
