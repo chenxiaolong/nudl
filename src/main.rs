@@ -22,6 +22,7 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
 use tokio::signal::ctrl_c;
 use tracing::debug;
+use unicode_width::UnicodeWidthStr;
 
 use crate::{
     cli::{Brand, Cli, Command, DownloadCli, ListCli, OutputFormat},
@@ -83,24 +84,24 @@ async fn list_subcommand(cli: &Cli, list_cli: &ListCli) -> Result<()> {
             const HEADING_VERSION: &str = "VERSION";
 
             let cars = client.get_cars(&region, &guid, brand).await?;
-            let model_max_len = cars
+            let model_max_width = cars
                 .iter()
-                .map(|c| c.id.len())
+                .map(|c| c.id.width())
                 .max()
                 .unwrap_or_default()
-                .max(HEADING_MODEL.len());
-            let name_max_len = cars
+                .max(HEADING_MODEL.width());
+            let name_max_width = cars
                 .iter()
-                .map(|c| c.name.len())
+                .map(|c| c.name.width())
                 .max()
                 .unwrap_or_default()
-                .max(HEADING_NAME.len());
+                .max(HEADING_NAME.width());
 
             writeln!(
                 stdout,
                 "{HEADING_MODEL:model_width$} {HEADING_NAME:name_width$} {HEADING_VERSION}",
-                model_width = model_max_len,
-                name_width = name_max_len + 2,
+                model_width = model_max_width,
+                name_width = name_max_width + 2,
             )?;
 
             for car in cars {
@@ -111,8 +112,8 @@ async fn list_subcommand(cli: &Cli, list_cli: &ListCli) -> Result<()> {
                         car.id,
                         car.name,
                         "",
-                        id_width = model_max_len,
-                        name_padding = name_max_len - car.name.len(),
+                        id_width = model_max_width,
+                        name_padding = name_max_width - car.name.width(),
                     )?;
                 }
             }
