@@ -1,3 +1,8 @@
+### Unreleased
+
+* Use Unicode width for text alignment ([PR #31])
+  * Fixes misaligned Korean text in `nudl list -r KR`
+
 ### Version 0.1.11
 
 * Fix `.ver` file creation when downloading firmware for models with multiple firmware versions ([Issue #24], [PR #27])
@@ -83,3 +88,4 @@
 [PR #25]: https://github.com/chenxiaolong/nudl/pull/25
 [PR #26]: https://github.com/chenxiaolong/nudl/pull/26
 [PR #27]: https://github.com/chenxiaolong/nudl/pull/27
+[PR #31]: https://github.com/chenxiaolong/nudl/pull/31
