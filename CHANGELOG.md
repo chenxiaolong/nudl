@@ -1,4 +1,4 @@
-### Unreleased
+### Version 0.1.13
 
 * Treat HTTP 499 and missing data field as invalid autodetected region ([Issue #32], [PR #33])
 
