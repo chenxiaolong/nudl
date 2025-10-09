@@ -572,12 +572,23 @@ impl NuClient {
             base_url(&data.region),
             data.region
         );
-        let platforms: Vec<IgnoredAny> = Self::exec(self.client.get(&platform_url)).await?;
 
-        if platforms.is_empty() {
-            Ok(AutodetectedRegion::Invalid(data.region))
-        } else {
+        let is_valid = match Self::exec::<Vec<IgnoredAny>>(self.client.get(&platform_url)).await {
+            Ok(platforms) => !platforms.is_empty(),
+            // The server sometimes returns a response with no data field or
+            // returns HTTP 499. These are both indicative of a bad region.
+            Err(Error::Request(e))
+                if e.is_decode() || e.status().map_or(false, |s| s.as_u16() == 499) =>
+            {
+                false
+            }
+            Err(e) => return Err(e.into()),
+        };
+
+        if is_valid {
             Ok(AutodetectedRegion::Valid(data.region))
+        } else {
+            Ok(AutodetectedRegion::Invalid(data.region))
         }
     }
 
