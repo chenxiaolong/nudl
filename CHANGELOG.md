@@ -1,3 +1,7 @@
+### Unreleased
+
+* Treat HTTP 499 and missing data field as invalid autodetected region ([Issue #32], [PR #33])
+
 ### Version 0.1.12
 
 * Use Unicode width for text alignment ([PR #31])
@@ -69,6 +73,7 @@
 [Issue #16]: https://github.com/chenxiaolong/nudl/issues/16
 [Issue #18]: https://github.com/chenxiaolong/nudl/issues/18
 [Issue #24]: https://github.com/chenxiaolong/nudl/issues/24
+[Issue #32]: https://github.com/chenxiaolong/nudl/issues/32
 [PR #1]: https://github.com/chenxiaolong/nudl/pull/1
 [PR #2]: https://github.com/chenxiaolong/nudl/pull/2
 [PR #3]: https://github.com/chenxiaolong/nudl/pull/3
@@ -89,3 +94,4 @@
 [PR #26]: https://github.com/chenxiaolong/nudl/pull/26
 [PR #27]: https://github.com/chenxiaolong/nudl/pull/27
 [PR #31]: https://github.com/chenxiaolong/nudl/pull/31
+[PR #33]: https://github.com/chenxiaolong/nudl/pull/33
