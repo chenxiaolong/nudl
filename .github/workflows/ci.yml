@@ -27,8 +27,12 @@ jobs:
         artifact:
           - os: ubuntu-latest
             name: x86_64-unknown-linux-musl
+          - os: ubuntu-24.04-arm
+            name: aarch64-unknown-linux-musl
           - os: windows-latest
             name: x86_64-pc-windows-msvc
+          - os: windows-11-arm
+            name: aarch64-pc-windows-msvc
           - os: macos-latest
             name: universal-apple-darwin
             targets:
@@ -43,7 +47,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install musl-gcc
-        if: matrix.artifact.os == 'ubuntu-latest'
+        if: endsWith(matrix.artifact.name, '-musl')
         uses: awalsh128/cache-apt-pkgs-action@2c09a5e66da6c8016428a2172bd76e5e4f14bb17 # v1.5.3
         with:
           packages: musl-tools
