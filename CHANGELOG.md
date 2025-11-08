@@ -1,3 +1,7 @@
+### Unreleased
+
+* Add prebuilt binaries for aarch64 GNU/Linux and Windows ([PR #34])
+
 ### Version 0.1.13
 
 * Treat HTTP 499 and missing data field as invalid autodetected region ([Issue #32], [PR #33])
@@ -95,3 +99,4 @@
 [PR #27]: https://github.com/chenxiaolong/nudl/pull/27
 [PR #31]: https://github.com/chenxiaolong/nudl/pull/31
 [PR #33]: https://github.com/chenxiaolong/nudl/pull/33
+[PR #34]: https://github.com/chenxiaolong/nudl/pull/34
