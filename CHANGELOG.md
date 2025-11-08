@@ -1,4 +1,4 @@
-### Unreleased
+### Version 0.1.14
 
 * Add prebuilt binaries for aarch64 GNU/Linux and Windows ([PR #34])
 

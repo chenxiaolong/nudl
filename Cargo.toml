@@ -1,6 +1,6 @@
 [package]
 name = "nudl"
-version = "0.1.13"
+version = "0.1.14"
 license = "GPL-3.0-only"
 edition = "2024"
 repository = "https://github.com/chenxiaolong/nudl"
