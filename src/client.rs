@@ -42,6 +42,8 @@ pub enum Error {
     BadFieldLength(&'static str, usize),
     #[error("Field {0:?} has invalid value: {1:?}")]
     BadFieldValue(&'static str, String),
+    #[error("Server has no data for region: {0:?}")]
+    RegionNoData(String),
     #[error("Unknown split zip naming scheme: {first} -> {last} ({count})")]
     UnknownZipNaming {
         first: String,
@@ -494,12 +496,6 @@ impl TryFrom<CarDownloadData> for FirmwareInfo {
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum AutodetectedRegion {
-    Valid(String),
-    Invalid(String),
-}
-
 /// Builder type for [`NuClient`].
 #[derive(Clone)]
 pub struct NuClientBuilder {
@@ -561,17 +557,19 @@ impl NuClient {
         Ok(json.data)
     }
 
-    /// Query the current region. This is likely based on GeoIP.
-    pub async fn get_region(&self, brand: &str) -> Result<AutodetectedRegion> {
+    /// Query the current region. This is likely based on GeoIP. This usually
+    /// returns ISO country codes, which may not match a valid region.
+    pub async fn get_region(&self) -> Result<String> {
         // The last path component doesn't matter.
         let url = format!("{BASE_URL}/region/status/KR");
         let data: RegionStatusData = Self::exec(self.client.get(&url)).await?;
 
-        let platform_url = format!(
-            "{}/car/platform/{brand}/{}",
-            base_url(&data.region),
-            data.region
-        );
+        Ok(data.region)
+    }
+
+    /// Check that a region code is actually valid.
+    pub async fn validate_region(&self, brand: &str, region: &str) -> Result<()> {
+        let platform_url = format!("{}/car/platform/{brand}/{}", base_url(region), region,);
 
         let is_valid = match Self::exec::<Vec<IgnoredAny>>(self.client.get(&platform_url)).await {
             Ok(platforms) => !platforms.is_empty(),
@@ -584,12 +582,11 @@ impl NuClient {
             }
             Err(e) => return Err(e),
         };
-
-        if is_valid {
-            Ok(AutodetectedRegion::Valid(data.region))
-        } else {
-            Ok(AutodetectedRegion::Invalid(data.region))
+        if !is_valid {
+            return Err(Error::RegionNoData(region.to_owned()));
         }
+
+        Ok(())
     }
 
     /// Request a GUID from the server. A GUID is required for requesting

@@ -26,7 +26,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::{
     cli::{Brand, Cli, Command, DownloadCli, ListCli, OutputFormat},
-    client::{AutodetectedRegion, CarInfo, NuClient, NuClientBuilder},
+    client::{CarInfo, NuClient, NuClientBuilder},
     download::{Downloader, ProgressMessage},
     progress::{ProgressSuspendingStderr, SpeedTracker},
 };
@@ -51,17 +51,19 @@ async fn prepare_client(
         .ignore_tls_validation(ignore_tls_validation)
         .build()?;
 
-    let region = match region {
-        Some(r) => r.to_owned(),
-        None => match client.get_region(brand.as_code_str()).await? {
-            AutodetectedRegion::Valid(r) => r,
-            AutodetectedRegion::Invalid(r) => {
-                bail!(
-                    "No data available for autodetected region: {r}. Please manually specify a region."
-                );
-            }
-        },
+    let (autodetected, region) = match region {
+        Some(r) => (false, r.to_owned()),
+        None => (true, client.get_region().await?),
     };
+
+    if let Err(e) = client.validate_region(brand.as_code_str(), &region).await {
+        return if autodetected {
+            Err(e).context("Could not autodetect the region. Please manually specify a region.")
+        } else {
+            Err(e.into())
+        };
+    }
+
     let guid = client.get_guid(&region).await?;
 
     Ok((client, region, guid))
