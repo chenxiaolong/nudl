@@ -1,3 +1,7 @@
+### Unreleased
+
+* Update dependencies ([PR #39])
+
 ### Version 0.1.14
 
 * Add prebuilt binaries for aarch64 GNU/Linux and Windows ([PR #34])
@@ -100,3 +104,4 @@
 [PR #31]: https://github.com/chenxiaolong/nudl/pull/31
 [PR #33]: https://github.com/chenxiaolong/nudl/pull/33
 [PR #34]: https://github.com/chenxiaolong/nudl/pull/34
+[PR #39]: https://github.com/chenxiaolong/nudl/pull/39
