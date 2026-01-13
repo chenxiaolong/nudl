@@ -15,7 +15,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result, anyhow, bail};
 use cap_std::{ambient_authority, fs::Dir};
 use clap::Parser;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
@@ -350,6 +350,10 @@ async fn main() -> Result<()> {
         .init();
 
     debug!("Arguments: {cli:#?}");
+
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .map_err(|_| anyhow!("Failed to set up ring as rustls crypto provider"))?;
 
     match &cli.command {
         Command::List(c) => list_subcommand(&cli, c).await,

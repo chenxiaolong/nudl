@@ -578,11 +578,11 @@ impl NuClient {
             // The server sometimes returns a response with no data field or
             // returns HTTP 499. These are both indicative of a bad region.
             Err(Error::Request(e))
-                if e.is_decode() || e.status().map_or(false, |s| s.as_u16() == 499) =>
+                if e.is_decode() || e.status().is_some_and(|s| s.as_u16() == 499) =>
             {
                 false
             }
-            Err(e) => return Err(e.into()),
+            Err(e) => return Err(e),
         };
 
         if is_valid {
