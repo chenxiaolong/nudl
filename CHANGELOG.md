@@ -1,4 +1,4 @@
-### Unreleased
+### Version 0.1.15
 
 * Show better error message when explicitly passing in an invalid region ([Issue #37], [PR #38])
 * Update dependencies ([PR #39])
