@@ -1,3 +1,7 @@
+### Version 0.1.16
+
+* Rebuild to fix incorrect version in `nudl --version` ([Issue #40])
+
 ### Version 0.1.15
 
 * Show better error message when explicitly passing in an invalid region ([Issue #37], [PR #38])
@@ -84,6 +88,7 @@
 [Issue #24]: https://github.com/chenxiaolong/nudl/issues/24
 [Issue #32]: https://github.com/chenxiaolong/nudl/issues/32
 [Issue #37]: https://github.com/chenxiaolong/nudl/issues/37
+[Issue #40]: https://github.com/chenxiaolong/nudl/issues/40
 [PR #1]: https://github.com/chenxiaolong/nudl/pull/1
 [PR #2]: https://github.com/chenxiaolong/nudl/pull/2
 [PR #3]: https://github.com/chenxiaolong/nudl/pull/3
