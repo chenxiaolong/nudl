@@ -94,23 +94,7 @@ pub struct FamilyGroup {
     pub region: Option<String>,
 }
 
-/// List available firmware.
-#[derive(Debug, Parser)]
-pub struct ListCli {
-    #[command(flatten)]
-    pub family: FamilyGroup,
-
-    /// Data output format.
-    ///
-    /// `text`: Two columns with the model ID and firmware version.
-    /// `json`: Normalized data from the server containing more information.
-    /// `json-raw`: Raw data from the server.
-    #[arg(short, long, default_value_t = OutputFormat::Text)]
-    pub output: OutputFormat,
-}
-
 #[derive(Debug, Args)]
-#[group(required = true)]
 pub struct FirmwareSelectorGroup {
     /// Select firmware by car model ID.
     ///
@@ -144,6 +128,24 @@ impl FirmwareSelectorGroup {
 
         selectors
     }
+}
+
+/// List available firmware.
+#[derive(Debug, Parser)]
+pub struct ListCli {
+    #[command(flatten)]
+    pub family: FamilyGroup,
+
+    #[command(flatten)]
+    pub selector: FirmwareSelectorGroup,
+
+    /// Data output format.
+    ///
+    /// `text`: Two columns with the model ID and firmware version.
+    /// `json`: Normalized data from the server containing more information.
+    /// `json-raw`: Raw data from the server.
+    #[arg(short, long, default_value_t = OutputFormat::Text)]
+    pub output: OutputFormat,
 }
 
 /// Download firmware.

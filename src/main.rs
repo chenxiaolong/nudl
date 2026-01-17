@@ -69,74 +69,6 @@ async fn prepare_client(
     Ok((client, region, guid))
 }
 
-async fn list_subcommand(cli: &Cli, list_cli: &ListCli) -> Result<()> {
-    let (client, region, guid) = prepare_client(
-        list_cli.family.brand,
-        list_cli.family.region.as_deref(),
-        cli.ignore_tls_validation,
-    )
-    .await?;
-    let brand = list_cli.family.brand.as_code_str();
-    let mut stdout = io::stdout().lock();
-
-    match list_cli.output {
-        OutputFormat::Text => {
-            const HEADING_MODEL: &str = "MODEL";
-            const HEADING_NAME: &str = "NAME";
-            const HEADING_VERSION: &str = "VERSION";
-
-            let cars = client.get_cars(&region, &guid, brand).await?;
-            let model_max_width = cars
-                .iter()
-                .map(|c| c.id.width())
-                .max()
-                .unwrap_or_default()
-                .max(HEADING_MODEL.width());
-            let name_max_width = cars
-                .iter()
-                .map(|c| c.name.width())
-                .max()
-                .unwrap_or_default()
-                .max(HEADING_NAME.width());
-
-            writeln!(
-                stdout,
-                "{HEADING_MODEL:model_width$} {HEADING_NAME:name_width$} {HEADING_VERSION}",
-                model_width = model_max_width,
-                name_width = name_max_width + 2,
-            )?;
-
-            for car in cars {
-                for version in &car.versions {
-                    writeln!(
-                        stdout,
-                        "{:id_width$} \"{}\"{:name_padding$} {version}",
-                        car.id,
-                        car.name,
-                        "",
-                        id_width = model_max_width,
-                        name_padding = name_max_width - car.name.width(),
-                    )?;
-                }
-            }
-        }
-        OutputFormat::Json => {
-            let cars = client.get_cars(&region, &guid, brand).await?;
-
-            serde_json::to_writer_pretty(&mut stdout, &cars)?;
-            writeln!(stdout)?;
-        }
-        OutputFormat::JsonRaw => {
-            let raw_data = client.get_cars_raw(&region, &guid, brand).await?;
-
-            serde_json::to_writer_pretty(&mut stdout, &raw_data)?;
-            writeln!(stdout)?;
-        }
-    }
-
-    Ok(())
-}
-
 fn join(into_iter: impl IntoIterator<Item = impl Display>, sep: &str) -> String {
     use std::fmt::Write;
 
@@ -186,6 +118,88 @@ impl fmt::Display for Selector {
             Self::Version(v) => write!(f, "-v {v}"),
         }
     }
+}
+
+async fn list_subcommand(cli: &Cli, list_cli: &ListCli) -> Result<()> {
+    let (client, region, guid) = prepare_client(
+        list_cli.family.brand,
+        list_cli.family.region.as_deref(),
+        cli.ignore_tls_validation,
+    )
+    .await?;
+    let brand = list_cli.family.brand.as_code_str();
+    let selectors = list_cli.selector.to_selectors();
+    let mut stdout = io::stdout().lock();
+
+    match list_cli.output {
+        OutputFormat::Text => {
+            const HEADING_MODEL: &str = "MODEL";
+            const HEADING_NAME: &str = "NAME";
+            const HEADING_VERSION: &str = "VERSION";
+
+            let mut cars = client.get_cars(&region, &guid, brand).await?;
+            if !selectors.is_empty() {
+                cars.retain(|c| selectors.iter().all(|s| s.matches_car(c)));
+            }
+
+            let model_max_width = cars
+                .iter()
+                .map(|c| c.id.width())
+                .max()
+                .unwrap_or_default()
+                .max(HEADING_MODEL.width());
+            let name_max_width = cars
+                .iter()
+                .map(|c| c.name.width())
+                .max()
+                .unwrap_or_default()
+                .max(HEADING_NAME.width());
+
+            writeln!(
+                stdout,
+                "{HEADING_MODEL:model_width$} {HEADING_NAME:name_width$} {HEADING_VERSION}",
+                model_width = model_max_width,
+                name_width = name_max_width + 2,
+            )?;
+
+            for car in cars {
+                for version in &car.versions {
+                    writeln!(
+                        stdout,
+                        "{:id_width$} \"{}\"{:name_padding$} {version}",
+                        car.id,
+                        car.name,
+                        "",
+                        id_width = model_max_width,
+                        name_padding = name_max_width - car.name.width(),
+                    )?;
+                }
+            }
+        }
+        OutputFormat::Json => {
+            let mut cars = client.get_cars(&region, &guid, brand).await?;
+            if !selectors.is_empty() {
+                cars.retain(|c| selectors.iter().all(|s| s.matches_car(c)));
+            }
+
+            serde_json::to_writer_pretty(&mut stdout, &cars)?;
+            writeln!(stdout)?;
+        }
+        OutputFormat::JsonRaw => {
+            let raw_data = client.get_cars_raw(&region, &guid, brand).await?;
+            if !selectors.is_empty() {
+                bail!(
+                    "Raw JSON output cannot be used with: {}",
+                    join(selectors, " "),
+                );
+            }
+
+            serde_json::to_writer_pretty(&mut stdout, &raw_data)?;
+            writeln!(stdout)?;
+        }
+    }
+
+    Ok(())
 }
 
 async fn download_subcommand(
