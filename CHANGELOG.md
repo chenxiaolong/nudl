@@ -1,3 +1,7 @@
+### Unreleased
+
+* Add support for `-m`/`-n`/`-v` filters from `nudl download` to `nudl list` as well ([Issue #41], [PR #42])
+
 ### Version 0.1.16
 
 * Rebuild to fix incorrect version in `nudl --version` ([Issue #40])
@@ -89,6 +93,7 @@
 [Issue #32]: https://github.com/chenxiaolong/nudl/issues/32
 [Issue #37]: https://github.com/chenxiaolong/nudl/issues/37
 [Issue #40]: https://github.com/chenxiaolong/nudl/issues/40
+[Issue #41]: https://github.com/chenxiaolong/nudl/issues/41
 [PR #1]: https://github.com/chenxiaolong/nudl/pull/1
 [PR #2]: https://github.com/chenxiaolong/nudl/pull/2
 [PR #3]: https://github.com/chenxiaolong/nudl/pull/3
@@ -113,3 +118,4 @@
 [PR #34]: https://github.com/chenxiaolong/nudl/pull/34
 [PR #38]: https://github.com/chenxiaolong/nudl/pull/38
 [PR #39]: https://github.com/chenxiaolong/nudl/pull/39
+[PR #42]: https://github.com/chenxiaolong/nudl/pull/42
