@@ -1,4 +1,4 @@
-### Unreleased
+### Version 0.1.17
 
 * Add support for `-m`/`-n`/`-v` filters from `nudl download` to `nudl list` as well ([Issue #41], [PR #42])
 
