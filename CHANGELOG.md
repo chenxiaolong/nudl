@@ -1,4 +1,4 @@
-### Unreleased
+### Version 0.1.18
 
 * Switch to miniz_oxide on Windows ([Issue #45], [PR #46])
   * Works around an upstream bug in zlib-rs that causes a crash when extracting firmware zip files larger than 4 GiB
