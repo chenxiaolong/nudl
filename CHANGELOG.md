@@ -1,3 +1,8 @@
+### Unreleased
+
+* Switch to miniz_oxide on Windows ([Issue #45], [PR #46])
+  * Works around an upstream bug in zlib-rs that causes a crash when extracting firmware zip files larger than 4 GiB
+
 ### Version 0.1.17
 
 * Add support for `-m`/`-n`/`-v` filters from `nudl download` to `nudl list` as well ([Issue #41], [PR #42])
@@ -94,6 +99,7 @@
 [Issue #37]: https://github.com/chenxiaolong/nudl/issues/37
 [Issue #40]: https://github.com/chenxiaolong/nudl/issues/40
 [Issue #41]: https://github.com/chenxiaolong/nudl/issues/41
+[Issue #45]: https://github.com/chenxiaolong/nudl/issues/45
 [PR #1]: https://github.com/chenxiaolong/nudl/pull/1
 [PR #2]: https://github.com/chenxiaolong/nudl/pull/2
 [PR #3]: https://github.com/chenxiaolong/nudl/pull/3
@@ -119,3 +125,4 @@
 [PR #38]: https://github.com/chenxiaolong/nudl/pull/38
 [PR #39]: https://github.com/chenxiaolong/nudl/pull/39
 [PR #42]: https://github.com/chenxiaolong/nudl/pull/42
+[PR #46]: https://github.com/chenxiaolong/nudl/pull/46
