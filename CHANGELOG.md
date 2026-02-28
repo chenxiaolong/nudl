@@ -1,4 +1,4 @@
-### Unreleased
+### Version 0.1.19
 
 * Switch back to zlib-rs on Windows ([Issue #45], [PR #49])
   * The upstream bug was fixed in zlib-rs 0.6.1
