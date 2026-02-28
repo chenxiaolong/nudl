@@ -2,6 +2,7 @@
 
 * Switch back to zlib-rs on Windows ([Issue #45], [PR #49])
   * The upstream bug was fixed in zlib-rs 0.6.1
+* Fix downloading firmware containing empty files ([Issue #50], [PR #51])
 
 ### Version 0.1.18
 
@@ -105,6 +106,7 @@
 [Issue #40]: https://github.com/chenxiaolong/nudl/issues/40
 [Issue #41]: https://github.com/chenxiaolong/nudl/issues/41
 [Issue #45]: https://github.com/chenxiaolong/nudl/issues/45
+[Issue #50]: https://github.com/chenxiaolong/nudl/issues/50
 [PR #1]: https://github.com/chenxiaolong/nudl/pull/1
 [PR #2]: https://github.com/chenxiaolong/nudl/pull/2
 [PR #3]: https://github.com/chenxiaolong/nudl/pull/3
@@ -132,3 +134,4 @@
 [PR #42]: https://github.com/chenxiaolong/nudl/pull/42
 [PR #46]: https://github.com/chenxiaolong/nudl/pull/46
 [PR #46]: https://github.com/chenxiaolong/nudl/pull/49
+[PR #51]: https://github.com/chenxiaolong/nudl/pull/51
