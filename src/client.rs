@@ -696,7 +696,18 @@ impl NuClient {
         r.error_for_status_ref()?;
 
         if status != StatusCode::PARTIAL_CONTENT {
-            return Err(Error::BadHttpResponse(StatusCode::PARTIAL_CONTENT, status));
+            let size = r
+                .headers()
+                .get(header::CONTENT_LENGTH)
+                .and_then(|v| v.to_str().ok())
+                .and_then(|v| v.parse::<u64>().ok());
+
+            // Empty files always return HTTP 200 because the Range and
+            // Content-Range headers, containing inclusive ranges, cannot
+            // represent empty files.
+            if size.is_none_or(|s| s > 0 || status != StatusCode::OK) {
+                return Err(Error::BadHttpResponse(StatusCode::PARTIAL_CONTENT, status));
+            }
         }
 
         Ok(r.bytes_stream())
