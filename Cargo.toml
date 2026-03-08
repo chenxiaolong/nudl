@@ -21,7 +21,8 @@ flate2 = { version = "1.0.29", features = ["zlib-rs"] }
 futures-core = "0.3.30"
 indicatif = "0.18.0"
 jiff = "0.2.1"
-rawzip = "0.4.0"
+# https://github.com/nickbabcock/rawzip/pull/122
+rawzip = { git = "https://github.com/nickbabcock/rawzip", rev = "fdc49ba50ca3c6d77712ba39e8c6159390ed2e4e" }
 reqwest = { version = "0.13.1", features = ["charset", "json", "http2", "rustls-no-provider", "stream"], default-features = false }
 rustls = { version = "0.23.36", features = ["logging", "ring", "std", "tls12"], default-features = false }
 serde = { version = "1.0.197", features = ["derive"] }

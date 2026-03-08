@@ -35,4 +35,5 @@ unknown-registry = "deny"
 unknown-git = "deny"
 allow-git = [
     "https://github.com/chenxiaolong/zipunsplit",
+    "https://github.com/nickbabcock/rawzip",
 ]
