@@ -1,3 +1,7 @@
+### Unreleased
+
+* Update rawzip dependency to fix CRC32 validation for zip files ([PR #53])
+
 ### Version 0.1.19
 
 * Switch back to zlib-rs on Windows ([Issue #45], [PR #49])
@@ -135,3 +139,4 @@
 [PR #46]: https://github.com/chenxiaolong/nudl/pull/46
 [PR #49]: https://github.com/chenxiaolong/nudl/pull/49
 [PR #51]: https://github.com/chenxiaolong/nudl/pull/51
+[PR #53]: https://github.com/chenxiaolong/nudl/pull/53
