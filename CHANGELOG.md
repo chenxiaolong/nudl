@@ -7,7 +7,7 @@
     to update the actual links at the bottom of the file.
 -->
 
-### Unreleased
+### Version 0.1.20
 
 * Update rawzip dependency to fix CRC32 validation for zip files ([PR #53])
 
