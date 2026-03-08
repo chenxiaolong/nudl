@@ -1,3 +1,12 @@
+<!--
+    When adding new changelog entries, use [Issue #0] to link to issues and
+    [PR #0] to link to pull requests. Then run:
+
+        cargo xtask update-changelog
+
+    to update the actual links at the bottom of the file.
+-->
+
 ### Unreleased
 
 * Update rawzip dependency to fix CRC32 validation for zip files ([PR #53])
@@ -100,6 +109,7 @@
 
 * Initial release
 
+<!-- Do not manually edit the lines below. Use `cargo xtask update-changelog` to regenerate. -->
 [Issue #8]: https://github.com/chenxiaolong/nudl/issues/8
 [Issue #13]: https://github.com/chenxiaolong/nudl/issues/13
 [Issue #16]: https://github.com/chenxiaolong/nudl/issues/16
