@@ -76,4 +76,4 @@ To verify the digital signatures of the downloads, follow [the steps here](https
 
 ## License
 
-nudl is licensed under the GPLv3 license. Please see [`LICENSE`](./LICENSE) for the full license text.
+nudl is licensed under the GPL-3.0-only license. Please see [`LICENSE`](./LICENSE) for the full license text.
