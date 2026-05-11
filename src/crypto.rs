@@ -1,10 +1,10 @@
-// SPDX-FileCopyrightText: 2024 Andrew Gunnerson
+// SPDX-FileCopyrightText: 2024-2026 Andrew Gunnerson
 // SPDX-License-Identifier: GPL-3.0-only
 
 use aes::Aes256;
 use block_padding::Pkcs7;
 use cbc::{Decryptor, Encryptor};
-use cipher::{BlockDecryptMut, BlockEncryptMut, KeyIvInit};
+use cipher::{BlockModeDecrypt, BlockModeEncrypt, KeyIvInit};
 use thiserror::Error;
 
 use crate::constants;
@@ -19,13 +19,13 @@ type Result<T> = std::result::Result<T, Error>;
 
 pub fn encrypt(data: &[u8]) -> Vec<u8> {
     Encryptor::<Aes256>::new(constants::KEY.into(), constants::IV.into())
-        .encrypt_padded_vec_mut::<Pkcs7>(data)
+        .encrypt_padded_vec::<Pkcs7>(data)
 }
 
 #[allow(unused)]
 pub fn decrypt(data: &[u8]) -> Result<Vec<u8>> {
     Decryptor::<Aes256>::new(constants::KEY.into(), constants::IV.into())
-        .decrypt_padded_vec_mut::<Pkcs7>(data)
+        .decrypt_padded_vec::<Pkcs7>(data)
         .map_err(|_| Error::CiphertextTooSmall)
 }
 
