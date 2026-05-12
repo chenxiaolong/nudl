@@ -7,6 +7,10 @@
     to update the actual links at the bottom of the file.
 -->
 
+### Unreleased
+
+* Update dependencies ([PR #56])
+
 ### Version 0.1.20
 
 * Update rawzip dependency to fix CRC32 validation for zip files ([PR #53])
@@ -150,3 +154,4 @@
 [PR #49]: https://github.com/chenxiaolong/nudl/pull/49
 [PR #51]: https://github.com/chenxiaolong/nudl/pull/51
 [PR #53]: https://github.com/chenxiaolong/nudl/pull/53
+[PR #56]: https://github.com/chenxiaolong/nudl/pull/56
