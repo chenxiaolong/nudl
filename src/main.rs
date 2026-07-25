@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Andrew Gunnerson
+// SPDX-FileCopyrightText: 2024-2026 Andrew Gunnerson
 // SPDX-License-Identifier: GPL-3.0-only
 
 mod cli;
@@ -8,6 +8,8 @@ mod crypto;
 mod download;
 mod model;
 mod progress;
+mod verify;
+mod version;
 
 use std::{
     fmt::{self, Display, Write as _},
@@ -25,10 +27,11 @@ use tracing::debug;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    cli::{Brand, Cli, Command, DownloadCli, ListCli, OutputFormat},
+    cli::{Brand, Cli, Command, DownloadCli, ListCli, OutputFormat, VerifyCli},
     client::{CarInfo, NuClient, NuClientBuilder},
     download::{Downloader, ProgressMessage},
     progress::{ProgressSuspendingStderr, SpeedTracker},
+    verify::Verifier,
 };
 
 const PROGRESS_SPEED_WINDOW: Duration = Duration::from_secs(1);
@@ -120,18 +123,18 @@ impl fmt::Display for Selector {
     }
 }
 
-async fn list_subcommand(cli: &Cli, list_cli: &ListCli) -> Result<()> {
+async fn list_subcommand(cli: &ListCli) -> Result<()> {
     let (client, region, guid) = prepare_client(
-        list_cli.family.brand,
-        list_cli.family.region.as_deref(),
-        cli.ignore_tls_validation,
+        cli.family.brand,
+        cli.family.region.as_deref(),
+        cli.network.ignore_tls_validation,
     )
     .await?;
-    let brand = list_cli.family.brand.as_code_str();
-    let selectors = list_cli.selector.to_selectors();
+    let brand = cli.family.brand.as_code_str();
+    let selectors = cli.selector.to_selectors();
     let mut stdout = io::stdout().lock();
 
-    match list_cli.output {
+    match cli.output {
         OutputFormat::Text => {
             const HEADING_MODEL: &str = "MODEL";
             const HEADING_NAME: &str = "NAME";
@@ -202,22 +205,18 @@ async fn list_subcommand(cli: &Cli, list_cli: &ListCli) -> Result<()> {
     Ok(())
 }
 
-async fn download_subcommand(
-    cli: &Cli,
-    download_cli: &DownloadCli,
-    bars: MultiProgress,
-) -> Result<()> {
+async fn download_subcommand(cli: &DownloadCli, bars: MultiProgress) -> Result<()> {
     let (client, region, guid) = prepare_client(
-        download_cli.family.brand,
-        download_cli.family.region.as_deref(),
-        cli.ignore_tls_validation,
+        cli.family.brand,
+        cli.family.region.as_deref(),
+        cli.network.ignore_tls_validation,
     )
     .await?;
 
     let cars = client
-        .get_cars(&region, &guid, download_cli.family.brand.as_code_str())
+        .get_cars(&region, &guid, cli.family.brand.as_code_str())
         .await?;
-    let selectors = download_cli.selector.to_selectors();
+    let selectors = cli.selector.to_selectors();
     let candidates: Vec<_> = cars
         .iter()
         .filter(|c| selectors.iter().all(|s| s.matches_car(c)))
@@ -268,7 +267,7 @@ async fn download_subcommand(
 
     println!("ID: {}", car.id);
     println!("Region: {region}");
-    println!("Brand: {}", car.brand());
+    println!("Brand: {}", car.brand.as_code_str());
     println!("Model: {}", car.name);
     println!("Version: {}", join(&car.versions, ", "));
     println!("Size: {} bytes", firmware.size);
@@ -281,10 +280,10 @@ async fn download_subcommand(
     }
 
     let authority = ambient_authority();
-    Dir::create_ambient_dir_all(&download_cli.output, authority)
-        .with_context(|| format!("Failed to create directory: {:?}", download_cli.output))?;
-    let directory = Dir::open_ambient_dir(&download_cli.output, authority)
-        .with_context(|| format!("Failed to open directory: {:?}", download_cli.output))?;
+    Dir::create_ambient_dir_all(&cli.output, authority)
+        .with_context(|| format!("Failed to create directory: {:?}", cli.output))?;
+    let directory = Dir::open_ambient_dir(&cli.output, authority)
+        .with_context(|| format!("Failed to open directory: {:?}", cli.output))?;
 
     // The progress will be misreported if files are modified by external
     // processes. Solving this requires sending HEAD requests for each split and
@@ -307,9 +306,9 @@ async fn download_subcommand(
         client,
         car.clone(),
         firmware,
-        download_cli.concurrency.0.into(),
-        download_cli.retries,
-        download_cli.keep_raw,
+        cli.concurrency.0.into(),
+        cli.retries,
+        cli.keep_raw,
     );
     let handle = downloader.download();
     tokio::pin!(handle);
@@ -353,6 +352,54 @@ async fn download_subcommand(
     Ok(())
 }
 
+async fn verify_subcommand(cli: &VerifyCli, bars: MultiProgress) -> Result<()> {
+    let authority = ambient_authority();
+    let directory = Dir::open_ambient_dir(&cli.directory, authority)
+        .with_context(|| format!("Failed to open directory: {:?}", cli.directory))?;
+
+    let mut p_verify_current = 0;
+    let p_verify = bars.add(ProgressBar::hidden());
+    p_verify.set_prefix("Verify");
+    p_verify.set_style(progress_style());
+
+    let (verifier, mut p_rx) = Verifier::new(directory, cli.concurrency.0.into());
+    let handle = verifier.verify();
+    tokio::pin!(handle);
+
+    loop {
+        tokio::select! {
+            c = ctrl_c() => {
+                let _ = bars.clear();
+                c?;
+
+                bail!("Verification was interrupted");
+            }
+            r = &mut handle => {
+                let _ = bars.clear();
+                r?;
+                break;
+            }
+            p = p_rx.recv() => {
+                if let Some(msg) = p {
+                    match msg {
+                        ProgressMessage::TotalDownload(_) => {}
+                        ProgressMessage::TotalPostProcess(bytes) => {
+                            p_verify.set_length(bytes);
+                        }
+                        ProgressMessage::Download(_) => {}
+                        ProgressMessage::PostProcess(bytes) => {
+                            p_verify_current += bytes;
+                            p_verify.set_position(p_verify_current);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -372,7 +419,8 @@ async fn main() -> Result<()> {
         .map_err(|_| anyhow!("Failed to set up ring as rustls crypto provider"))?;
 
     match &cli.command {
-        Command::List(c) => list_subcommand(&cli, c).await,
-        Command::Download(c) => download_subcommand(&cli, c, bars).await,
+        Command::List(c) => list_subcommand(c).await,
+        Command::Download(c) => download_subcommand(c, bars).await,
+        Command::Verify(c) => verify_subcommand(c, bars).await,
     }
 }

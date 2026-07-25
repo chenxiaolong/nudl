@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Andrew Gunnerson
+// SPDX-FileCopyrightText: 2024-2026 Andrew Gunnerson
 // SPDX-License-Identifier: GPL-3.0-only
 
 use std::{
@@ -31,7 +31,10 @@ use zipunsplitlib::{
     split,
 };
 
-use crate::client::{self, CarInfo, FirmwareInfo, NuClient};
+use crate::{
+    client::{self, CarInfo, FirmwareInfo, NuClient},
+    version::VersionInfo,
+};
 
 const DOWNLOAD_EXT: &str = concat!(env!("CARGO_PKG_NAME"), "_download");
 const EXTRACT_EXT: &str = concat!(env!("CARGO_PKG_NAME"), "_extract");
@@ -186,56 +189,13 @@ impl Downloader {
         (result, progress_rx)
     }
 
-    /// Compute contents of version info file.
-    fn version_file(car: &CarInfo, firmware: &FirmwareInfo) -> String {
-        use std::fmt::Write;
-
-        let mut result = String::new();
-
-        writeln!(
-            &mut result,
-            "+|{}|{}|{}|{}|{}|1",
-            firmware.update_version,
-            // The official app always puts the first listed version number in
-            // this file. All output files are exactly identical regardless of
-            // which firmware version the user selects for the same model ID.
-            car.versions[0],
-            car.brand(),
-            car.id,
-            car.mcode,
-        )
-        .unwrap();
-
-        for file in &firmware.files {
-            let mut directory = String::new();
-            if let Some(name) = &file.directory {
-                directory.push('\\');
-                directory.push_str(&name.replace('/', "\\"));
-            }
-
-            writeln!(
-                &mut result,
-                "{}{directory}|{}|{}|{}|{}|1",
-                car.id,
-                file.name,
-                file.version,
-                file.crc32 as i32,
-                // This is signed in the raw response, but unsigned here.
-                file.size,
-            )
-            .unwrap();
-        }
-
-        result
-    }
-
     /// Write version info file to [`CarInfo::id`]`.ver`.
     fn write_version_file(directory: &Dir, car: &CarInfo, firmware: &FirmwareInfo) -> Result<()> {
         let path = format!("{}.ver", car.id);
-        let contents = Self::version_file(car, firmware);
+        let info = VersionInfo::new(car, firmware);
 
         directory
-            .write(&path, contents)
+            .write(&path, info.to_string())
             .with_context(|| format!("Failed to write file: {path}"))
     }
 

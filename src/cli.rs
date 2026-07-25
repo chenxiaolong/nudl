@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Andrew Gunnerson
+// SPDX-FileCopyrightText: 2024-2026 Andrew Gunnerson
 // SPDX-License-Identifier: GPL-3.0-only
 
 use std::{fmt, path::PathBuf, str::FromStr};
@@ -130,6 +130,13 @@ impl FirmwareSelectorGroup {
     }
 }
 
+#[derive(Debug, Args)]
+pub struct NetworkGroup {
+    /// Ignore TLS certificate validation for HTTPS connections.
+    #[arg(long)]
+    pub ignore_tls_validation: bool,
+}
+
 /// List available firmware.
 #[derive(Debug, Parser)]
 pub struct ListCli {
@@ -146,6 +153,9 @@ pub struct ListCli {
     /// `json-raw`: Raw data from the server.
     #[arg(short, long, default_value_t = OutputFormat::Text)]
     pub output: OutputFormat,
+
+    #[command(flatten)]
+    pub network: NetworkGroup,
 }
 
 /// Download firmware.
@@ -174,12 +184,30 @@ pub struct DownloadCli {
     /// Keep raw unextracted files.
     #[arg(short, long)]
     pub keep_raw: bool,
+
+    #[command(flatten)]
+    pub network: NetworkGroup,
+}
+
+/// Verify CRC32 of existing firmware.
+#[derive(Debug, Parser)]
+pub struct VerifyCli {
+    /// Firmware directory.
+    #[arg(short, long, value_parser, default_value = ".")]
+    pub directory: PathBuf,
+
+    /// Verification concurrency.
+    ///
+    /// The maximum concurrency allowed is 16.
+    #[arg(short, long, default_value = "4")]
+    pub concurrency: Concurrency,
 }
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
     List(ListCli),
     Download(DownloadCli),
+    Verify(VerifyCli),
 }
 
 #[derive(Debug, Parser)]
@@ -191,8 +219,4 @@ pub struct Cli {
     /// Lowest log message severity to output.
     #[arg(long, global = true, value_name = "LEVEL", default_value_t = Level::INFO)]
     pub log_level: Level,
-
-    /// Ignore TLS certificate validation for HTTPS connections.
-    #[arg(long, global = true)]
-    pub ignore_tls_validation: bool,
 }

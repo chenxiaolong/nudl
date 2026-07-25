@@ -103,6 +103,22 @@ pub enum BrandInfo {
     Unknown(String),
 }
 
+impl BrandInfo {
+    pub fn new(brand: &str) -> Self {
+        match Brand::from_str(brand) {
+            Ok(b) => Self::Known(b),
+            Err(b) => Self::Unknown(b),
+        }
+    }
+
+    pub fn as_code_str(&self) -> &str {
+        match self {
+            Self::Known(b) => b.as_code_str(),
+            Self::Unknown(b) => b.as_str(),
+        }
+    }
+}
+
 impl Serialize for BrandInfo {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -146,11 +162,6 @@ impl TryFrom<Car> for CarInfo {
             return Err(Error::BadFieldLength("sw_vers", car.sw_vers.len()));
         }
 
-        let brand = match Brand::from_str(&car.brand) {
-            Ok(b) => BrandInfo::Known(b),
-            Err(b) => BrandInfo::Unknown(b),
-        };
-
         // The marketing name sometimes includes NBSP (\u00a0).
         let name = car
             .dvc_name
@@ -159,7 +170,7 @@ impl TryFrom<Car> for CarInfo {
             .collect::<String>();
 
         Ok(Self {
-            brand,
+            brand: BrandInfo::new(&car.brand),
             id: car.dest_path,
             code: car.download_code,
             model: car.vcl_name,
@@ -167,15 +178,6 @@ impl TryFrom<Car> for CarInfo {
             versions: car.sw_vers,
             mcode: car.mcode,
         })
-    }
-}
-
-impl CarInfo {
-    pub fn brand(&self) -> &str {
-        match &self.brand {
-            BrandInfo::Known(b) => b.as_code_str(),
-            BrandInfo::Unknown(b) => b.as_str(),
-        }
     }
 }
 

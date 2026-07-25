@@ -15,7 +15,7 @@ First, download nudl from the [releases page](https://github.com/chenxiaolong/nu
 
 Then, to list the available vehicle models and firmware versions, run:
 
-```
+```bash
 nudl list -b <brand>
 ```
 
@@ -24,13 +24,13 @@ where `<brand>` is `hyundai`, `kia`, or `genesis`.
 
 To download the latest firmware for a vehicle, run:
 
-```
+```bash
 nudl download -b <brand> -m <model> -o <output directory>
 ```
 
 If a model has multiple variants that share the same model ID (for example, HEV vs PHEV), `nudl download` will error and list the available firmware versions. Disambiguate by specifying the model name or exact firmware version shown by `nudl list`:
 
-```
+```bash
 nudl download -b <brand> -m <model> -n <model name>
 # Or
 nudl download -b <brand> -m <model> -v <firmware version>
@@ -58,13 +58,25 @@ Note that the progress bars may sometimes be misleading (eg. `32.73 GiB / 10.60 
 
 For more information about other command-line arguments, see `--help`.
 
+## Verifying existing firmware
+
+To verify an existing firmware directory against the checksums contained inside the `<model>.ver` file, run:
+
+```bash
+nudl verify -d <directory>
+```
+
+Verification normally happens as part of the download process, but this command can be useful for verifying the integrity of the files after the firmware has been copied elsewhere (e.g. to a USB drive). The car itself also checks file integrity before installation.
+
+Verifying existing firmware does not require network access.
+
 ## Building from source
 
 To build from source, first make sure that the Rust toolchain is installed. It can be installed from https://rustup.rs/ or the OS's package manager.
 
 Build nudl using the following command:
 
-```
+```bash
 cargo build --release
 ```
 
