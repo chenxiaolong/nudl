@@ -8,6 +8,7 @@ mod crypto;
 mod download;
 mod model;
 mod progress;
+mod verify;
 
 use std::{
     fmt::{self, Display, Write as _},
@@ -25,10 +26,11 @@ use tracing::debug;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    cli::{Brand, Cli, Command, DownloadCli, ListCli, OutputFormat},
+    cli::{Brand, Cli, Command, DownloadCli, ListCli, OutputFormat, VerifyCli},
     client::{CarInfo, NuClient, NuClientBuilder},
     download::{Downloader, ProgressMessage},
     progress::{ProgressSuspendingStderr, SpeedTracker},
+    verify::FileStatus,
 };
 
 const PROGRESS_SPEED_WINDOW: Duration = Duration::from_secs(1);
@@ -353,6 +355,82 @@ async fn download_subcommand(
     Ok(())
 }
 
+fn verify_subcommand(verify_cli: &VerifyCli, bars: MultiProgress) -> Result<()> {
+    let authority = ambient_authority();
+    let directory = Dir::open_ambient_dir(&verify_cli.directory, authority)
+        .with_context(|| format!("Failed to open directory: {:?}", verify_cli.directory))?;
+
+    let ver_contents = match &verify_cli.ver_file {
+        Some(path) => std::fs::read_to_string(path)
+            .with_context(|| format!("Failed to read .ver file: {path:?}"))?,
+        None => {
+            let name = verify::find_ver_file(&directory)?;
+            directory
+                .read_to_string(&name)
+                .with_context(|| format!("Failed to read .ver file: {name}"))?
+        }
+    };
+
+    let entries = verify::parse_ver_file(&ver_contents)?;
+
+    // Total up the bytes of the files that actually exist so the progress bar
+    // reflects the work that can be done.
+    let mut total = 0;
+    for entry in &entries {
+        if let Ok(metadata) = directory.metadata(&entry.path) {
+            total += metadata.len();
+        }
+    }
+
+    let progress = bars.add(ProgressBar::hidden());
+    progress.set_prefix("Verify");
+    progress.set_style(progress_style());
+    progress.set_length(total);
+
+    let mut failures = 0;
+
+    for entry in &entries {
+        let status = verify::verify_entry(&directory, entry, |n| progress.inc(n))?;
+
+        let line = match status {
+            FileStatus::Ok => format!("OK       {}", entry.path),
+            FileStatus::Missing => {
+                failures += 1;
+                format!("MISSING  {}", entry.path)
+            }
+            FileStatus::SizeMismatch { expected, actual } => {
+                failures += 1;
+                format!(
+                    "BAD SIZE {} (expected {expected} bytes, got {actual})",
+                    entry.path,
+                )
+            }
+            FileStatus::CrcMismatch { expected, actual } => {
+                failures += 1;
+                format!(
+                    "BAD CRC  {} (expected {expected:08X}, got {actual:08X})",
+                    entry.path,
+                )
+            }
+        };
+
+        // Print to stdout (suspending the progress bar so it isn't clobbered in
+        // a terminal). Unlike `MultiProgress::println`, this is also visible
+        // when stdout is redirected to a file.
+        bars.suspend(|| println!("{line}"));
+    }
+
+    progress.finish_and_clear();
+
+    let total_files = entries.len();
+    if failures == 0 {
+        println!("All {total_files} files verified successfully");
+        Ok(())
+    } else {
+        bail!("{failures} of {total_files} files failed verification");
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -374,5 +452,6 @@ async fn main() -> Result<()> {
     match &cli.command {
         Command::List(c) => list_subcommand(&cli, c).await,
         Command::Download(c) => download_subcommand(&cli, c, bars).await,
+        Command::Verify(c) => verify_subcommand(c, bars),
     }
 }

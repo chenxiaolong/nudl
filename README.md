@@ -58,6 +58,16 @@ Note that the progress bars may sometimes be misleading (eg. `32.73 GiB / 10.60 
 
 For more information about other command-line arguments, see `--help`.
 
+## Verifying an existing download
+
+When firmware is downloaded, nudl writes a `<model ID>.ver` file alongside it containing the expected CRC32 and size of every file. To re-verify an already-downloaded directory against that file — for example, to confirm that a copy onto a USB drive or SD card is intact — run:
+
+```
+nudl verify <directory>
+```
+
+This requires no network connection. Each file is reported as `OK`, `MISSING`, `BAD SIZE`, or `BAD CRC`, and the command exits with a non-zero status if any file fails. If the directory contains more than one `.ver` file, select one explicitly with `--ver-file <path>`.
+
 ## Building from source
 
 To build from source, first make sure that the Rust toolchain is installed. It can be installed from https://rustup.rs/ or the OS's package manager.

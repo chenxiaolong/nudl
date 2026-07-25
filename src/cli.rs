@@ -176,10 +176,30 @@ pub struct DownloadCli {
     pub keep_raw: bool,
 }
 
+/// Verify an already-downloaded firmware directory.
+///
+/// The CRC32 and size of each file are checked against the `.ver` file that was
+/// written alongside the firmware when it was downloaded. This is useful for
+/// confirming that a copy (eg. to a USB drive or SD card) is intact. No network
+/// connection is required.
+#[derive(Debug, Parser)]
+pub struct VerifyCli {
+    /// Directory containing the downloaded firmware.
+    #[arg(value_parser, default_value = ".")]
+    pub directory: PathBuf,
+
+    /// Path to the `.ver` checksum file.
+    ///
+    /// If unspecified, the single `.ver` file in the directory is used.
+    #[arg(long, value_parser)]
+    pub ver_file: Option<PathBuf>,
+}
+
 #[derive(Debug, Subcommand)]
 pub enum Command {
     List(ListCli),
     Download(DownloadCli),
+    Verify(VerifyCli),
 }
 
 #[derive(Debug, Parser)]
