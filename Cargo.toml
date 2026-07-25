@@ -21,7 +21,7 @@ publish.workspace = true
 [dependencies]
 aes = "0.9.0"
 anyhow = "1.0.80"
-base64 = "0.22.0"
+base64 = "0.23.0"
 block-padding = "0.4.2"
 bytes = "1.5.0"
 cap-std = "4.0.0"
@@ -33,7 +33,7 @@ flate2 = { version = "1.0.29", features = ["zlib-rs"] }
 futures-core = "0.3.30"
 indicatif = "0.18.0"
 jiff = "0.2.1"
-rawzip = { version = "0.4.4" }
+rawzip = { version = "0.5.1" }
 reqwest = { version = "0.13.1", features = ["charset", "json", "http2", "rustls-no-provider", "stream"], default-features = false }
 rustls = { version = "0.23.36", features = ["logging", "ring", "std", "tls12"], default-features = false }
 serde = { version = "1.0.197", features = ["derive"] }

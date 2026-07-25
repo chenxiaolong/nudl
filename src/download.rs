@@ -663,8 +663,8 @@ impl Downloader {
         }
 
         let reader: Box<dyn Read> = match compression_method {
-            CompressionMethod::Store => Box::new(entry.reader()),
-            CompressionMethod::Deflate => Box::new(DeflateDecoder::new(entry.reader())),
+            CompressionMethod::STORE => Box::new(entry.reader()),
+            CompressionMethod::DEFLATE => Box::new(DeflateDecoder::new(entry.reader())),
             c => bail!("Unsupported zip compression method: {c:?}"),
         };
         let mut reader = entry.verifying_reader(reader);
