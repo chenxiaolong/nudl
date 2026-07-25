@@ -9,6 +9,7 @@
 
 ### Unreleased
 
+* Add `nudl verify` command to check an already-downloaded firmware directory against its `.ver` checksums (eg. to validate a copy on a USB drive or SD card)
 * Update dependencies ([PR #56])
 
 ### Version 0.1.20
