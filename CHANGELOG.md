@@ -7,7 +7,7 @@
     to update the actual links at the bottom of the file.
 -->
 
-### Unreleased
+### Version 1.0.0
 
 * Add new `nudl verify` subcommand to verify an existing download ([PR #59], [PR #60])
 * Update dependencies ([PR #56], [PR #61])
