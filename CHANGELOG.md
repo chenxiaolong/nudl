@@ -9,7 +9,7 @@
 
 ### Unreleased
 
-* Update dependencies ([PR #56])
+* Update dependencies ([PR #56], [PR #61])
 
 ### Version 0.1.20
 
@@ -155,3 +155,4 @@
 [PR #51]: https://github.com/chenxiaolong/nudl/pull/51
 [PR #53]: https://github.com/chenxiaolong/nudl/pull/53
 [PR #56]: https://github.com/chenxiaolong/nudl/pull/56
+[PR #61]: https://github.com/chenxiaolong/nudl/pull/61
