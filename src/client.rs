@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Andrew Gunnerson
+// SPDX-FileCopyrightText: 2024-2026 Andrew Gunnerson
 // SPDX-License-Identifier: GPL-3.0-only
 
 use std::{
@@ -31,6 +31,41 @@ use crate::{
 const BASE_URL: &str = "https://api.map-care.com/api/v3";
 const BASE_URL_EU: &str = "https://apieu.map-care.com/api/v3";
 const USER_AGENT: &str = "curl/7.74.0-DEV";
+
+const EU_EEA_ISO_3166_1: &[&str] = &[
+    // EU
+    "AT", // Austria
+    "BE", // Belgium
+    "BG", // Bulgaria
+    "CY", // Cyprus
+    "CZ", // Czechia
+    "DE", // Germany
+    "DK", // Denmark
+    "EE", // Estonia
+    "ES", // Spain
+    "FI", // Finland
+    "FR", // France
+    "GR", // Greece
+    "HR", // Croatia
+    "HU", // Hungary
+    "IE", // Ireland
+    "IT", // Italy
+    "LT", // Lithuania
+    "LU", // Luxembourg
+    "LV", // Latvia
+    "MT", // Malta
+    "NL", // Netherlands
+    "PL", // Poland
+    "PT", // Portugal
+    "RO", // Romania
+    "SE", // Sweden
+    "SI", // Slovenia
+    "SK", // Slovakia
+    // EEA
+    "IS", // Iceland
+    "LI", // Liechtenstein
+    "NO", // Norway
+];
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -565,6 +600,10 @@ impl NuClient {
         // The last path component doesn't matter.
         let url = format!("{BASE_URL}/region/status/KR");
         let data: RegionStatusData = Self::exec(self.client.get(&url)).await?;
+
+        if EU_EEA_ISO_3166_1.contains(&data.region.as_str()) {
+            return Ok("EU".to_owned());
+        }
 
         Ok(data.region)
     }
