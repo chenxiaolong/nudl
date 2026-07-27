@@ -566,7 +566,12 @@ impl NuClient {
         let url = format!("{BASE_URL}/region/status/KR");
         let data: RegionStatusData = Self::exec(self.client.get(&url)).await?;
 
-        Ok(data.region)
+        let mapped_region = match data.region.as_str() {
+            "CY" => "EU",
+            _ => data.region.as_str(),
+        };
+
+        Ok(mapped_region.to_string())
     }
 
     /// Check that a region code is actually valid.
