@@ -7,7 +7,7 @@
     to update the actual links at the bottom of the file.
 -->
 
-### Unreleased
+### Version 1.0.1
 
 * Default to the `EU` region code when the server autodetects an EU or EEA country ([PR #62], [PR #63])
 
