@@ -7,6 +7,10 @@
     to update the actual links at the bottom of the file.
 -->
 
+### Unreleased
+
+* Default to the `EU` region code when the server autodetects an EU or EEA country ([PR #62], [PR #63])
+
 ### Version 1.0.0
 
 * Add new `nudl verify` subcommand to verify an existing download ([PR #59], [PR #60])
@@ -159,3 +163,5 @@
 [PR #59]: https://github.com/chenxiaolong/nudl/pull/59
 [PR #60]: https://github.com/chenxiaolong/nudl/pull/60
 [PR #61]: https://github.com/chenxiaolong/nudl/pull/61
+[PR #62]: https://github.com/chenxiaolong/nudl/pull/62
+[PR #63]: https://github.com/chenxiaolong/nudl/pull/63
