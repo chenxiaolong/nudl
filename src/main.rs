@@ -30,7 +30,7 @@ use crate::{
     cli::{Brand, Cli, Command, DownloadCli, ListCli, OutputFormat, VerifyCli},
     client::{CarInfo, NuClient, NuClientBuilder},
     download::{Downloader, ProgressMessage},
-    progress::{ProgressSuspendingStderr, SpeedTracker},
+    progress::{Osc94, Osc94Printer, ProgressSuspendingStderr, SpeedTracker, progress_percentage},
     verify::Verifier,
 };
 
@@ -291,12 +291,13 @@ async fn download_subcommand(cli: &DownloadCli, bars: MultiProgress) -> Result<(
     // would be corrupt anyway and the progress bar is the least of the user's
     // concerns.
 
-    let mut p_dl_current = 0;
+    let mut osc94 = Osc94Printer::new();
+    osc94.update(Osc94::Indeterminate);
+
     let p_dl = bars.add(ProgressBar::hidden());
     p_dl.set_prefix("Download");
     p_dl.set_style(progress_style());
 
-    let mut p_pp_current = 0;
     let p_pp = bars.add(ProgressBar::hidden());
     p_pp.set_prefix("Post-process");
     p_pp.set_style(progress_style());
@@ -336,14 +337,24 @@ async fn download_subcommand(cli: &DownloadCli, bars: MultiProgress) -> Result<(
                             p_pp.set_length(bytes);
                         }
                         ProgressMessage::Download(bytes) => {
-                            p_dl_current += bytes;
-                            p_dl.set_position(p_dl_current);
+                            p_dl.inc(bytes);
                         }
                         ProgressMessage::PostProcess(bytes) => {
-                            p_pp_current += bytes;
-                            p_pp.set_position(p_pp_current);
+                            p_pp.inc(bytes);
                         }
                     }
+
+                    let osc94_bars: &[&ProgressBar] = if p_pp.length() == Some(0) {
+                        // If the server won't tell us the total extracted size,
+                        // then don't include post-processing progress since
+                        // otherwise the OSC 9;4 progress will always be more
+                        // than halfway complete.
+                        &[&p_dl]
+                    } else {
+                        &[&p_dl, &p_pp]
+                    };
+
+                    osc94.update(Osc94::Normal(progress_percentage(osc94_bars)));
                 }
             }
         }
@@ -357,7 +368,9 @@ async fn verify_subcommand(cli: &VerifyCli, bars: MultiProgress) -> Result<()> {
     let directory = Dir::open_ambient_dir(&cli.directory, authority)
         .with_context(|| format!("Failed to open directory: {:?}", cli.directory))?;
 
-    let mut p_verify_current = 0;
+    let mut osc94 = Osc94Printer::new();
+    osc94.update(Osc94::Indeterminate);
+
     let p_verify = bars.add(ProgressBar::hidden());
     p_verify.set_prefix("Verify");
     p_verify.set_style(progress_style());
@@ -388,10 +401,11 @@ async fn verify_subcommand(cli: &VerifyCli, bars: MultiProgress) -> Result<()> {
                         }
                         ProgressMessage::Download(_) => {}
                         ProgressMessage::PostProcess(bytes) => {
-                            p_verify_current += bytes;
-                            p_verify.set_position(p_verify_current);
+                            p_verify.inc(bytes);
                         }
                     }
+
+                    osc94.update(Osc94::Normal(progress_percentage(&[&p_verify])));
                 }
             }
         }

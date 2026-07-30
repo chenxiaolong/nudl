@@ -1,14 +1,14 @@
-// SPDX-FileCopyrightText: 2020-2024 Andrew Gunnerson
+// SPDX-FileCopyrightText: 2020-2026 Andrew Gunnerson
 // SPDX-License-Identifier: GPL-3.0-only
 
 use std::{
     collections::VecDeque,
     fmt,
-    io::{self, IoSlice, Write},
+    io::{self, IoSlice, IsTerminal, Write},
     time::{Duration, Instant},
 };
 
-use indicatif::{BinaryBytes, MultiProgress, ProgressState, style::ProgressTracker};
+use indicatif::{BinaryBytes, MultiProgress, ProgressBar, ProgressState, style::ProgressTracker};
 use tracing_subscriber::fmt::MakeWriter;
 
 /// Type that receives progress values and buffers them to compute the average
@@ -125,4 +125,85 @@ impl<'a> MakeWriter<'a> for ProgressSuspendingStderr {
     fn make_writer(&'a self) -> Self::Writer {
         self.clone()
     }
+}
+
+#[allow(unused)]
+#[derive(Clone, Copy, Eq, PartialEq)]
+#[repr(u8)]
+pub enum Osc94 {
+    Hidden = 0,
+    Normal(u8) = 1,
+    Error(u8) = 2,
+    Indeterminate = 3,
+    Warning(u8) = 4,
+}
+
+impl fmt::Display for Osc94 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // SAFETY: Primitive representation.
+        // https://doc.rust-lang.org/reference/items/enumerations.html#r-items.enum.discriminant.access-memory
+        let state = unsafe { *(self as *const Self).cast::<u8>() };
+
+        let progress = match self {
+            Self::Hidden | Self::Indeterminate => 0,
+            Self::Normal(p) | Self::Error(p) | Self::Warning(p) => 100.min(*p),
+        };
+
+        write!(f, "\x1b]9;4;{state};{progress}\x07")
+    }
+}
+
+#[derive(Clone)]
+pub struct Osc94Printer {
+    state: Osc94,
+    is_terminal: bool,
+}
+
+impl Osc94Printer {
+    pub fn new() -> Self {
+        Self {
+            state: Osc94::Hidden,
+            is_terminal: io::stderr().is_terminal(),
+        }
+    }
+
+    pub fn update(&mut self, state: Osc94) {
+        if self.state != state {
+            self.state = state;
+            if self.is_terminal {
+                // Max OSC 9;4 length is 14 bytes.
+                let mut buf = [0u8; 16];
+                let _ = write!(buf.as_mut_slice(), "{state}");
+                let n = buf.iter().position(|b| *b == 0).unwrap();
+
+                // Ensure the write is atomic.
+                let _ = io::stderr().write(&buf[..n]);
+            }
+        }
+    }
+}
+
+impl Drop for Osc94Printer {
+    fn drop(&mut self) {
+        self.update(Osc94::Hidden);
+    }
+}
+
+pub fn progress_percentage(bars: &[&ProgressBar]) -> u8 {
+    let ratio_sum = bars
+        .iter()
+        .map(|b| {
+            if let Some(l) = b.length()
+                && l > 0
+            {
+                b.position() as f64 / l as f64
+            } else if b.position() == 0 {
+                0f64
+            } else {
+                1f64
+            }
+        })
+        .sum::<f64>();
+
+    (ratio_sum / bars.len() as f64 * 100f64).round() as u8
 }
