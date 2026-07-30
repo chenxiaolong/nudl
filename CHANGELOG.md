@@ -7,6 +7,11 @@
     to update the actual links at the bottom of the file.
 -->
 
+### Unreleased
+
+* Add support for OSC 9;4 ([PR #64])
+  * This allows compatible terminal emulators, like Konsole and Windows Terminal, to show the download progress in their tab bars or OS taskbar icons.
+
 ### Version 1.0.1
 
 * Default to the `EU` region code when the server autodetects an EU or EEA country ([PR #62], [PR #63])
@@ -165,3 +170,4 @@
 [PR #61]: https://github.com/chenxiaolong/nudl/pull/61
 [PR #62]: https://github.com/chenxiaolong/nudl/pull/62
 [PR #63]: https://github.com/chenxiaolong/nudl/pull/63
+[PR #64]: https://github.com/chenxiaolong/nudl/pull/64
