@@ -7,7 +7,7 @@
     to update the actual links at the bottom of the file.
 -->
 
-### Unreleased
+### Version 1.1.0
 
 * Add support for OSC 9;4 ([PR #64])
   * This allows compatible terminal emulators, like Konsole and Windows Terminal, to show the download progress in their tab bars or OS taskbar icons.
