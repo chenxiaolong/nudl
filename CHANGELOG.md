@@ -12,6 +12,7 @@
 * Add support for OSC 9;4 ([PR #64])
   * This allows compatible terminal emulators, like Konsole and Windows Terminal, to show the download progress in their tab bars or OS taskbar icons.
 * Fix interruption via SIGINT (Ctrl+C) sometimes being non-responsive ([PR #65])
+* Fix some pedantic clippy warnings ([PR #66])
 
 ### Version 1.0.1
 
@@ -173,3 +174,4 @@
 [PR #63]: https://github.com/chenxiaolong/nudl/pull/63
 [PR #64]: https://github.com/chenxiaolong/nudl/pull/64
 [PR #65]: https://github.com/chenxiaolong/nudl/pull/65
+[PR #66]: https://github.com/chenxiaolong/nudl/pull/66
