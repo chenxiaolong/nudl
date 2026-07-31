@@ -354,7 +354,7 @@ async fn download_subcommand(cli: &DownloadCli, bars: MultiProgress) -> Result<(
                         &[&p_dl, &p_pp]
                     };
 
-                    osc94.update(Osc94::Normal(progress_percentage(osc94_bars)));
+                    osc94.update(Osc94::Determinate(progress_percentage(osc94_bars)));
                 }
             }
         }
@@ -405,7 +405,7 @@ async fn verify_subcommand(cli: &VerifyCli, bars: MultiProgress) -> Result<()> {
                         }
                     }
 
-                    osc94.update(Osc94::Normal(progress_percentage(&[&p_verify])));
+                    osc94.update(Osc94::Determinate(progress_percentage(&[&p_verify])));
                 }
             }
         }

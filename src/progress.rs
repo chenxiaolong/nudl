@@ -8,6 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use anstyle_progress::TermProgress;
 use indicatif::{BinaryBytes, MultiProgress, ProgressBar, ProgressState, style::ProgressTracker};
 use tracing_subscriber::fmt::MakeWriter;
 
@@ -127,53 +128,40 @@ impl<'a> MakeWriter<'a> for ProgressSuspendingStderr {
     }
 }
 
-#[allow(unused)]
 #[derive(Clone, Copy, Eq, PartialEq)]
-#[repr(u8)]
 pub enum Osc94 {
-    Hidden = 0,
-    Normal(u8) = 1,
-    Error(u8) = 2,
-    Indeterminate = 3,
-    Warning(u8) = 4,
-}
-
-impl fmt::Display for Osc94 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // SAFETY: Primitive representation.
-        // https://doc.rust-lang.org/reference/items/enumerations.html#r-items.enum.discriminant.access-memory
-        let state = unsafe { *(self as *const Self).cast::<u8>() };
-
-        let progress = match self {
-            Self::Hidden | Self::Indeterminate => 0,
-            Self::Normal(p) | Self::Error(p) | Self::Warning(p) => 100.min(*p),
-        };
-
-        write!(f, "\x1b]9;4;{state};{progress}\x07")
-    }
+    Hidden,
+    Determinate(u8),
+    Indeterminate,
 }
 
 #[derive(Clone)]
 pub struct Osc94Printer {
     state: Osc94,
-    is_terminal: bool,
+    supported: bool,
 }
 
 impl Osc94Printer {
     pub fn new() -> Self {
         Self {
             state: Osc94::Hidden,
-            is_terminal: io::stderr().is_terminal(),
+            supported: anstyle_progress::supports_term_progress(io::stderr().is_terminal()),
         }
     }
 
     pub fn update(&mut self, state: Osc94) {
         if self.state != state {
             self.state = state;
-            if self.is_terminal {
-                // Max OSC 9;4 length is 14 bytes.
+            if self.supported {
+                let term_progress = match state {
+                    Osc94::Hidden => TermProgress::remove(),
+                    Osc94::Determinate(p) => TermProgress::start().percent(p.min(100)),
+                    Osc94::Indeterminate => TermProgress::start(),
+                };
+
+                // Max OSC 9;4 length is 13 bytes.
                 let mut buf = [0u8; 16];
-                let _ = write!(buf.as_mut_slice(), "{state}");
+                let _ = write!(buf.as_mut_slice(), "{term_progress}");
                 let n = buf.iter().position(|b| *b == 0).unwrap();
 
                 // Ensure the write is atomic.
