@@ -17,7 +17,8 @@ use tokio::{
 use tracing::{debug, error};
 
 use crate::{
-    download::{CancelOnDrop, ProgressMessage, check_cancel},
+    cancel::{CancelOnDrop, check_cancel},
+    progress::{THROTTLE_DELAY, ThrottledProgress},
     version::{self, VersionEntry, VersionInfo},
 };
 
@@ -56,6 +57,11 @@ pub enum Error {
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
+
+pub enum ProgressMessage {
+    Total(u64),
+    Progress(u64),
+}
 
 pub struct Verifier {
     directory: Arc<Dir>,
@@ -133,6 +139,9 @@ impl Verifier {
         let mut hasher = Hasher::new();
         let mut buf = [0u8; 8192];
 
+        let mut progress =
+            ThrottledProgress::new(progress_tx, ProgressMessage::Progress, THROTTLE_DELAY);
+
         loop {
             check_cancel(cancel_signal).map_err(Error::Cancelled)?;
 
@@ -145,10 +154,12 @@ impl Verifier {
 
             hasher.update(&buf[..n]);
 
-            progress_tx
-                .blocking_send(ProgressMessage::PostProcess(n as u64))
+            progress
+                .update_blocking(n as u64)
                 .map_err(Error::Progress)?;
         }
+
+        progress.flush_blocking().map_err(Error::Progress)?;
 
         let digest = hasher.finalize();
         if digest != entry.crc32 {
@@ -197,11 +208,11 @@ impl Verifier {
 
         // Report initial progress.
         self.progress_tx
-            .send(ProgressMessage::TotalPostProcess(total_size))
+            .send(ProgressMessage::Total(total_size))
             .await
             .map_err(Error::Progress)?;
         self.progress_tx
-            .send(ProgressMessage::PostProcess(0))
+            .send(ProgressMessage::Progress(0))
             .await
             .map_err(Error::Progress)?;
 

@@ -10,6 +10,7 @@ use std::{
 
 use anstyle_progress::TermProgress;
 use indicatif::{BinaryBytes, MultiProgress, ProgressBar, ProgressState, style::ProgressTracker};
+use tokio::sync::mpsc::{self, error::SendError};
 use tracing_subscriber::fmt::MakeWriter;
 
 /// Type that receives progress values and buffers them to compute the average
@@ -194,4 +195,85 @@ pub fn progress_percentage(bars: &[&ProgressBar]) -> u8 {
         .sum::<f64>();
 
     (ratio_sum / bars.len() as f64 * 100f64).round() as u8
+}
+
+pub const THROTTLE_DELAY: Duration = Duration::from_millis(50);
+
+pub struct ThrottledProgress<T> {
+    progress_tx: mpsc::Sender<T>,
+    transform: fn(u64) -> T,
+    delay: Duration,
+    last_send: Instant,
+    pending: u64,
+}
+
+impl<T> ThrottledProgress<T> {
+    pub fn new(progress_tx: mpsc::Sender<T>, transform: fn(u64) -> T, delay: Duration) -> Self {
+        let now = Instant::now();
+
+        Self {
+            progress_tx,
+            transform,
+            delay,
+            last_send: now.checked_sub(delay).unwrap_or(now),
+            pending: 0,
+        }
+    }
+
+    async fn force_update(&mut self, inc: u64) -> Result<(), SendError<T>> {
+        self.progress_tx
+            .send((self.transform)(self.pending + inc))
+            .await?;
+
+        self.pending = 0;
+        self.last_send = Instant::now();
+
+        Ok(())
+    }
+
+    fn force_update_blocking(&mut self, inc: u64) -> Result<(), SendError<T>> {
+        self.progress_tx
+            .blocking_send((self.transform)(self.pending + inc))?;
+
+        self.pending = 0;
+        self.last_send = Instant::now();
+
+        Ok(())
+    }
+
+    pub async fn update(&mut self, inc: u64) -> Result<(), SendError<T>> {
+        if self.last_send.elapsed() >= self.delay {
+            self.force_update(inc).await?;
+        } else {
+            self.pending += inc;
+        }
+
+        Ok(())
+    }
+
+    pub fn update_blocking(&mut self, inc: u64) -> Result<(), SendError<T>> {
+        if self.last_send.elapsed() >= self.delay {
+            self.force_update_blocking(inc)?;
+        } else {
+            self.pending += inc;
+        }
+
+        Ok(())
+    }
+
+    pub async fn flush(&mut self) -> Result<(), SendError<T>> {
+        if self.pending > 0 {
+            self.force_update(0).await?;
+        }
+
+        Ok(())
+    }
+
+    pub fn flush_blocking(&mut self) -> Result<(), SendError<T>> {
+        if self.pending > 0 {
+            self.force_update_blocking(0)?;
+        }
+
+        Ok(())
+    }
 }

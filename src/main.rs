@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2024-2026 Andrew Gunnerson
 // SPDX-License-Identifier: GPL-3.0-only
 
+mod cancel;
 mod cli;
 mod client;
 mod constants;
@@ -29,7 +30,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     cli::{Brand, Cli, Command, DownloadCli, ListCli, OutputFormat, VerifyCli},
     client::{CarInfo, NuClient, NuClientBuilder},
-    download::{Downloader, ProgressMessage},
+    download::Downloader,
     progress::{Osc94, Osc94Printer, ProgressSuspendingStderr, SpeedTracker, progress_percentage},
     verify::Verifier,
 };
@@ -316,6 +317,8 @@ async fn download_subcommand(cli: &DownloadCli, bars: MultiProgress) -> Result<(
 
     loop {
         tokio::select! {
+            biased;
+
             c = ctrl_c() => {
                 let _ = bars.clear();
                 c?;
@@ -330,16 +333,16 @@ async fn download_subcommand(cli: &DownloadCli, bars: MultiProgress) -> Result<(
             p = p_rx.recv() => {
                 if let Some(msg) = p {
                     match msg {
-                        ProgressMessage::TotalDownload(bytes) => {
+                        download::ProgressMessage::TotalDownload(bytes) => {
                             p_dl.set_length(bytes);
                         }
-                        ProgressMessage::TotalPostProcess(bytes) => {
+                        download::ProgressMessage::TotalPostProcess(bytes) => {
                             p_pp.set_length(bytes);
                         }
-                        ProgressMessage::Download(bytes) => {
+                        download::ProgressMessage::Download(bytes) => {
                             p_dl.inc(bytes);
                         }
-                        ProgressMessage::PostProcess(bytes) => {
+                        download::ProgressMessage::PostProcess(bytes) => {
                             p_pp.inc(bytes);
                         }
                     }
@@ -381,6 +384,8 @@ async fn verify_subcommand(cli: &VerifyCli, bars: MultiProgress) -> Result<()> {
 
     loop {
         tokio::select! {
+            biased;
+
             c = ctrl_c() => {
                 let _ = bars.clear();
                 c?;
@@ -395,12 +400,10 @@ async fn verify_subcommand(cli: &VerifyCli, bars: MultiProgress) -> Result<()> {
             p = p_rx.recv() => {
                 if let Some(msg) = p {
                     match msg {
-                        ProgressMessage::TotalDownload(_) => {}
-                        ProgressMessage::TotalPostProcess(bytes) => {
+                        verify::ProgressMessage::Total(bytes) => {
                             p_verify.set_length(bytes);
                         }
-                        ProgressMessage::Download(_) => {}
-                        ProgressMessage::PostProcess(bytes) => {
+                        verify::ProgressMessage::Progress(bytes) => {
                             p_verify.inc(bytes);
                         }
                     }

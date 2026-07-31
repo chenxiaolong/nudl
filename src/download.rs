@@ -5,10 +5,7 @@ use std::{
     collections::VecDeque,
     io::{self, Read, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
+    sync::{Arc, atomic::AtomicBool},
     time::Duration,
 };
 
@@ -32,7 +29,9 @@ use zipunsplitlib::{
 };
 
 use crate::{
+    cancel::{CancelOnDrop, check_cancel},
     client::{self, CarInfo, FirmwareInfo, NuClient},
+    progress::{THROTTLE_DELAY, ThrottledProgress},
     version::VersionInfo,
 };
 
@@ -41,39 +40,6 @@ const EXTRACT_EXT: &str = concat!(env!("CARGO_PKG_NAME"), "_extract");
 const VERIFY_EXT: &str = concat!(env!("CARGO_PKG_NAME"), "_verify");
 
 const RETRY_DELAY: Duration = Duration::from_secs(1);
-
-pub struct CancelOnDrop(Arc<AtomicBool>);
-
-impl CancelOnDrop {
-    pub fn new() -> Self {
-        Self(Arc::new(AtomicBool::new(false)))
-    }
-
-    pub fn handle(&self) -> Arc<AtomicBool> {
-        self.0.clone()
-    }
-}
-
-impl Drop for CancelOnDrop {
-    fn drop(&mut self) {
-        self.0.store(true, Ordering::SeqCst);
-    }
-}
-
-/// Returns an I/O error with the [`io::ErrorKind::Interrupted`] type if
-/// `cancel_signal` is true. This should be called frequently in I/O loops for
-/// cancellation to be responsive.
-#[inline]
-pub fn check_cancel(cancel_signal: &AtomicBool) -> io::Result<()> {
-    if cancel_signal.load(Ordering::SeqCst) {
-        return Err(io::Error::new(
-            io::ErrorKind::Interrupted,
-            "Received cancel signal",
-        ));
-    }
-
-    Ok(())
-}
 
 /// Delete a file, but don't error out if the path doesn't exist.
 fn delete_if_exists(directory: &Dir, path: &Path) -> Result<()> {
@@ -343,6 +309,9 @@ impl Downloader {
             Err(e) => return Err(e.into()),
         };
 
+        let mut progress =
+            ThrottledProgress::new(progress_tx, ProgressMessage::Download, THROTTLE_DELAY);
+
         while let Some(data) = stream.next().await {
             let data = data?;
             trace!("[{path}] Received {} bytes", data.len());
@@ -351,10 +320,10 @@ impl Downloader {
                 .await
                 .with_context(|| format!("Failed to write {} bytes", data.len()))?;
 
-            progress_tx
-                .send(ProgressMessage::Download(data.len() as u64))
-                .await?;
+            progress.update(data.len() as u64).await?;
         }
+
+        progress.flush().await?;
 
         file.sync_all().await.context("Failed to sync file")?;
 
@@ -439,7 +408,7 @@ impl Downloader {
                 }
                 Err(e) => {
                     warn!(
-                        "[Attempt #{}/{}] Failed to download to: {download_path}: {e:?}",
+                        "[Attempt #{}/{}] Failed to download to: {download_path}: {e:#}",
                         attempt + 1,
                         u16::from(retries) + 1,
                     );
@@ -507,6 +476,9 @@ impl Downloader {
         let mut hasher = Hasher::new();
         let mut buf = [0u8; 8192];
 
+        let mut progress =
+            ThrottledProgress::new(progress_tx, ProgressMessage::PostProcess, THROTTLE_DELAY);
+
         loop {
             check_cancel(cancel_signal)?;
 
@@ -519,8 +491,10 @@ impl Downloader {
 
             hasher.update(&buf[..n]);
 
-            progress_tx.blocking_send(ProgressMessage::PostProcess(n as u64))?;
+            progress.update_blocking(n as u64)?;
         }
+
+        progress.flush_blocking()?;
 
         let digest = hasher.finalize();
         if digest != file_info.crc32 {
@@ -635,6 +609,9 @@ impl Downloader {
             .with_context(|| format!("Failed to create file: {extract_path}"))?;
         let mut buf = [0u8; 8192];
 
+        let mut progress =
+            ThrottledProgress::new(progress_tx, ProgressMessage::PostProcess, THROTTLE_DELAY);
+
         loop {
             check_cancel(cancel_signal)?;
 
@@ -648,8 +625,10 @@ impl Downloader {
             file.write_all(&buf[..n])
                 .with_context(|| format!("Failed to write data: {extract_path}"))?;
 
-            progress_tx.blocking_send(ProgressMessage::PostProcess(n as u64))?;
+            progress.update_blocking(n as u64)?;
         }
+
+        progress.flush_blocking()?;
 
         check_cancel(cancel_signal)?;
 
