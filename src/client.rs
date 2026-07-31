@@ -111,9 +111,9 @@ struct Authorization(DateTime);
 
 impl Authorization {
     /// Construct a new instance based on the current local time.
-    fn new() -> Result<Self> {
+    fn new() -> Self {
         let timestamp = Zoned::now();
-        Ok(Self::with_timestamp(timestamp.datetime()))
+        Self::with_timestamp(timestamp.datetime())
     }
 
     /// Construct a new instance with the specified timestamp.
@@ -363,10 +363,10 @@ impl TryFrom<File> for FileInfo {
         // For older models, the server returns the sizes as signed 32-bit
         // integers that overflow.
         if size < 0 {
-            size = (size as i32 as u32).into();
+            size = (size as i32).cast_unsigned().into();
         }
         if zip_size < 0 {
-            zip_size = (zip_size as i32 as u32).into();
+            zip_size = (zip_size as i32).cast_unsigned().into();
         }
 
         let zip_naming = ZipNamingScheme::parse(
@@ -376,18 +376,18 @@ impl TryFrom<File> for FileInfo {
         )?;
 
         Ok(Self {
-            crc32: crc32 as u32,
+            crc32: crc32.cast_unsigned(),
             directory: if file.dest_path.is_empty() {
                 None
             } else {
                 Some(file.dest_path)
             },
             name: file.file_name,
-            size: size as u64,
+            size: size.cast_unsigned(),
             server_path: file.file_path,
             version: file.version,
             zip_count,
-            zip_size: zip_size as u64,
+            zip_size: zip_size.cast_unsigned(),
             zip_naming,
         })
     }
@@ -430,7 +430,7 @@ impl FileInfo {
     pub fn download_name(&self, index: u32) -> String {
         assert!(index < self.download_count(), "{index} is out of range");
 
-        if let ZipNamingScheme::NotZip = self.zip_naming {
+        if matches!(self.zip_naming, ZipNamingScheme::NotZip) {
             self.name.clone()
         } else {
             self.zip_naming.name(index)
@@ -610,7 +610,7 @@ impl NuClient {
 
     /// Check that a region code is actually valid.
     pub async fn validate_region(&self, brand: &str, region: &str) -> Result<()> {
-        let platform_url = format!("{}/car/platform/{brand}/{}", base_url(region), region,);
+        let platform_url = format!("{}/car/platform/{brand}/{}", base_url(region), region);
 
         let is_valid = match Self::exec::<Vec<IgnoredAny>>(self.client.get(&platform_url)).await {
             Ok(platforms) => !platforms.is_empty(),
@@ -656,7 +656,7 @@ impl NuClient {
             user_type: "U".to_owned(),
         };
 
-        let authorization = Authorization::new()?;
+        let authorization = Authorization::new();
 
         Self::exec(
             self.client
@@ -679,7 +679,7 @@ impl NuClient {
     pub async fn get_firmware_info(&self, region: &str, car: &CarInfo) -> Result<FirmwareInfo> {
         let url = format!("{}/car/download/{}", base_url(region), car.code);
 
-        let authorization = Authorization::new()?;
+        let authorization = Authorization::new();
         let data: CarDownloadData = Self::exec(
             self.client
                 .get(&url)

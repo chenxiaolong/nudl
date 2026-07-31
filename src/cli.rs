@@ -38,7 +38,7 @@ pub enum Brand {
 }
 
 impl Brand {
-    pub fn as_code_str(&self) -> &'static str {
+    pub fn as_code_str(self) -> &'static str {
         match self {
             Self::Hyundai => "HM",
             Self::Kia => "KM",
@@ -46,7 +46,7 @@ impl Brand {
         }
     }
 
-    pub fn as_pretty_str(&self) -> &'static str {
+    pub fn as_pretty_str(self) -> &'static str {
         match self {
             Self::Hyundai => "Hyundai",
             Self::Kia => "Kia",

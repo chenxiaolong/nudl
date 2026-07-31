@@ -113,7 +113,10 @@ impl fmt::Display for VersionEntry {
         write!(
             f,
             "|{}|{}|{}|{}|1",
-            self.filename, self.version, self.crc32 as i32, self.size,
+            self.filename,
+            self.version,
+            self.crc32.cast_signed(),
+            self.size,
         )
     }
 }
@@ -127,13 +130,13 @@ impl FromStr for VersionEntry {
 
             let id_directory = iter.next()?;
             let (id, directory) = match id_directory.split_once('\\') {
-                Some((i, d)) => (i, Some(d.replace("\\", "/"))),
+                Some((i, d)) => (i, Some(d.replace('\\', "/"))),
                 None => (id_directory, None),
             };
 
             let filename = iter.next()?;
             let version = iter.next()?;
-            let crc32 = iter.next()?.parse::<i32>().ok()? as u32;
+            let crc32 = iter.next()?.parse::<i32>().ok()?.cast_unsigned();
             let size = iter.next()?.parse::<u64>().ok()?;
 
             let completed = iter.next()?;
@@ -210,7 +213,7 @@ impl FromStr for VersionInfo {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut iter = s.split_terminator("\n");
+        let mut iter = s.split_terminator('\n');
 
         let header = iter
             .next()

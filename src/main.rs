@@ -97,7 +97,7 @@ pub enum Selector {
 }
 
 impl Selector {
-    fn all_for_car(car: &CarInfo) -> Vec<Selector> {
+    fn all_for_car(car: &CarInfo) -> Vec<Self> {
         let mut result = vec![Self::Model(car.id.clone()), Self::Name(car.name.clone())];
 
         result.extend(car.versions.iter().cloned().map(Self::Version));
@@ -133,7 +133,6 @@ async fn list_subcommand(cli: &ListCli) -> Result<()> {
     .await?;
     let brand = cli.family.brand.as_code_str();
     let selectors = cli.selector.to_selectors();
-    let mut stdout = io::stdout().lock();
 
     match cli.output {
         OutputFormat::Text => {
@@ -158,6 +157,8 @@ async fn list_subcommand(cli: &ListCli) -> Result<()> {
                 .max()
                 .unwrap_or_default()
                 .max(HEADING_NAME.width());
+
+            let mut stdout = io::stdout().lock();
 
             writeln!(
                 stdout,
@@ -186,6 +187,8 @@ async fn list_subcommand(cli: &ListCli) -> Result<()> {
                 cars.retain(|c| selectors.iter().all(|s| s.matches_car(c)));
             }
 
+            let mut stdout = io::stdout().lock();
+
             serde_json::to_writer_pretty(&mut stdout, &cars)?;
             writeln!(stdout)?;
         }
@@ -197,6 +200,8 @@ async fn list_subcommand(cli: &ListCli) -> Result<()> {
                     join(selectors, " "),
                 );
             }
+
+            let mut stdout = io::stdout().lock();
 
             serde_json::to_writer_pretty(&mut stdout, &raw_data)?;
             writeln!(stdout)?;

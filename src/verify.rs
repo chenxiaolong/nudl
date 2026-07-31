@@ -98,7 +98,7 @@ impl Verifier {
 
                 let contents = directory
                     .read_to_string(&name)
-                    .map_err(|e| Error::ReadFile(name.to_owned(), e))?;
+                    .map_err(|e| Error::ReadFile(name.clone(), e))?;
 
                 ver_file = Some((name, contents));
             }
@@ -108,7 +108,7 @@ impl Verifier {
 
         ver_contents
             .parse::<VersionInfo>()
-            .map_err(|e| Error::InvalidVerFile(ver_name.to_owned(), e))
+            .map_err(|e| Error::InvalidVerFile(ver_name.clone(), e))
     }
 
     fn verify_entry(
@@ -125,7 +125,7 @@ impl Verifier {
 
         let size = file
             .seek(SeekFrom::End(0))
-            .and_then(|s| file.rewind().map(|_| s))
+            .and_then(|s| file.rewind().map(|()| s))
             .map_err(|e| Error::ReadFile(path.clone().into_owned(), e))?;
 
         if size != entry.size {

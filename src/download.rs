@@ -166,8 +166,8 @@ impl Downloader {
     }
 
     fn compute_initial_state(
-        base_directory: Arc<Dir>,
-        firmware: Arc<FirmwareInfo>,
+        base_directory: &Dir,
+        firmware: &FirmwareInfo,
         cancel_signal: &AtomicBool,
     ) -> Result<InitialState> {
         let mut dl_bytes = 0;
@@ -206,7 +206,7 @@ impl Downloader {
                     }
                 }
             } else {
-                &base_directory
+                base_directory
             };
 
             if stat_if_exists(directory, Path::new(&file_info.name))?.is_some() {
@@ -401,7 +401,7 @@ impl Downloader {
             .await;
 
             match ret {
-                Ok(_) => break,
+                Ok(()) => break,
                 Err(e) if attempt == retries => {
                     return Err(e)
                         .with_context(|| format!("Failed to download to: {download_path}"));
@@ -509,15 +509,13 @@ impl Downloader {
 
         directory
             .rename(&verify_path, directory, &file_info.name)
-            .with_context(
-                || format!("Failed to move file: {verify_path} -> {}", file_info.name,),
-            )?;
+            .with_context(|| format!("Failed to move file: {verify_path} -> {}", file_info.name))?;
 
         Ok(())
     }
 
     fn extract(
-        directory: Arc<Dir>,
+        directory: &Arc<Dir>,
         firmware: &FirmwareInfo,
         file_index: usize,
         progress_tx: mpsc::Sender<ProgressMessage>,
@@ -638,7 +636,7 @@ impl Downloader {
         drop(file);
 
         directory
-            .rename(&extract_path, &directory, &file_info.name)
+            .rename(&extract_path, directory, &file_info.name)
             .with_context(|| {
                 format!("Failed to move file: {extract_path} -> {}", file_info.name)
             })?;
@@ -695,7 +693,7 @@ impl Downloader {
             if file_info.is_split() {
                 if !clean_only {
                     Self::extract(
-                        directory.clone(),
+                        &directory,
                         &firmware,
                         file_index,
                         progress_tx,
@@ -759,7 +757,7 @@ impl Downloader {
             let firmware = self.firmware.clone();
 
             task::spawn_blocking(move || {
-                Self::compute_initial_state(base_directory, firmware, &cancel_signal)
+                Self::compute_initial_state(&base_directory, &firmware, &cancel_signal)
             })
             .await??
         };
