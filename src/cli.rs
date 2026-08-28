@@ -160,6 +160,21 @@ pub struct ListCli {
 
 /// Download firmware.
 #[derive(Debug, Parser)]
+#[command(after_help = "\
+EXAMPLES:
+    Download the latest firmware for a vehicle:
+
+        nudl download -b hyundai -m <model> -o <output directory>
+
+    If a model ID has multiple variants (e.g. HEV vs. PHEV), `nudl download`
+    will error and list the available firmware versions. Disambiguate by
+    specifying the model name or exact firmware version shown by `nudl
+    list`:
+
+        nudl download -b hyundai -m <model> -n <model name>
+        nudl download -b hyundai -m <model> -v <firmware version>
+
+    Run `nudl list -b <brand>` first to find the available <model> values.")]
 pub struct DownloadCli {
     #[command(flatten)]
     pub family: FamilyGroup,
@@ -212,6 +227,10 @@ pub enum Command {
 
 #[derive(Debug, Parser)]
 #[command(version)]
+#[command(
+    after_help = "Run `nudl <COMMAND> --help` for detailed usage and examples, \
+e.g. `nudl download --help`."
+)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Command,
