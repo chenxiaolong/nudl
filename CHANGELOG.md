@@ -7,6 +7,10 @@
     to update the actual links at the bottom of the file.
 -->
 
+### Unreleased
+
+* Update dependencies ([PR #73])
+
 ### Version 1.2.0
 
 * Add additional usage information to the footer of `--help` output ([PR #67])
@@ -186,3 +190,4 @@
 [PR #67]: https://github.com/chenxiaolong/nudl/pull/67
 [PR #69]: https://github.com/chenxiaolong/nudl/pull/69
 [PR #70]: https://github.com/chenxiaolong/nudl/pull/70
+[PR #73]: https://github.com/chenxiaolong/nudl/pull/73
