@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2024-2026 Andrew Gunnerson
 // SPDX-License-Identifier: GPL-3.0-only
 
-use std::{fmt, path::PathBuf, str::FromStr};
+use std::{path::PathBuf, str::FromStr};
 
 use anyhow::bail;
-use clap::{Args, Parser, Subcommand, ValueEnum, builder::Styles};
 use tracing::Level;
+use winnow_args::{Args, Subcommand, ValueEnum};
 
 use crate::Selector;
 
@@ -75,12 +75,6 @@ pub enum OutputFormat {
     JsonRaw,
 }
 
-impl fmt::Display for OutputFormat {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.to_possible_value().ok_or(fmt::Error)?.get_name())
-    }
-}
-
 #[derive(Debug, Args)]
 pub struct FamilyGroup {
     /// Car brand.
@@ -137,38 +131,27 @@ pub struct NetworkGroup {
     pub ignore_tls_validation: bool,
 }
 
-fn list_additional_help() -> String {
-    let styles = Styles::styled();
-    let h = styles.get_header();
-    let l = styles.get_literal();
-    let p = styles.get_placeholder();
-
-    format!(
-        "{h}Help:{h:#}
-
-  To list the available firmware versions, run:
-
-    {l}nudl{l:#} {l}list{l:#} {l}-b{l:#} {p}<brand>{p:#}
-
-  The first column contains the model ID. To download the firmware, run:
-
-    {l}nudl{l:#} {l}download{l:#} {l}-b{l:#} {p}<brand>{p:#} {l}-m{l:#} {p}<model>{p:#}
-
-  For more information about download-related options, run:
-
-    {l}nudl{l:#} {l}download{l:#} {l}--help{l:#}
-"
-    )
-}
-
 /// List available firmware.
-#[derive(Debug, Parser)]
-#[command(after_help = list_additional_help())]
+#[derive(Debug, Args)]
+#[arg(
+    example(
+        "nudl list -b <BRAND>",
+        header = "To list available models and firmware versions"
+    ),
+    example(
+        "nudl download -b <BRAND> -m <MODEL>",
+        header = "To download the firmware for a specific model"
+    ),
+    example(
+        "nudl download --help",
+        header = "For more information about download-related options"
+    )
+)]
 pub struct ListCli {
-    #[command(flatten)]
+    #[arg(flatten)]
     pub family: FamilyGroup,
 
-    #[command(flatten)]
+    #[arg(flatten)]
     pub selector: FirmwareSelectorGroup,
 
     /// Data output format.
@@ -176,97 +159,74 @@ pub struct ListCli {
     /// `text`: Two columns with the model ID and firmware version.
     /// `json`: Normalized data from the server containing more information.
     /// `json-raw`: Raw data from the server.
-    #[arg(short, long, default_value_t = OutputFormat::Text)]
+    #[arg(short, long, default = "text")]
     pub output: OutputFormat,
 
-    #[command(flatten)]
+    #[arg(flatten)]
     pub network: NetworkGroup,
 }
 
-fn download_additional_help() -> String {
-    let styles = Styles::styled();
-    let h = styles.get_header();
-    let l = styles.get_literal();
-    let p = styles.get_placeholder();
-
-    format!("{h}Help:{h:#}
-
-  Specify {l}-m{l:#}/{l}--model{l:#} to select the vehicle model. For example:
-
-    {l}nudl{l:#} {l}download{l:#} {l}-b{l:#} {p}<brand>{p:#} {l}-m{l:#} {p}<model>{p:#} {l}-o{l:#} {p}<output directory>{p:#}
-
-  If there are multiple firmware variants for a single model (eg. HEV vs. PHEV),
-  the command will fail and print out the list of available downloads as well as
-  the additional command line options needed to select a specific one.
-
-  To list the available models, run:
-
-    {l}nudl{l:#} {l}list{l:#} {l}-b{l:#} {p}<brand>{p:#}
-")
-}
-
 /// Download firmware.
-#[derive(Debug, Parser)]
-#[command(after_help = download_additional_help())]
+#[derive(Debug, Args)]
+#[arg(
+    example(
+        "nudl download -b <BRAND> -m <MODEL> -o <OUTPUT DIR>",
+        header = "To download the firmware for a specific model"
+    ),
+    example("nudl list -b <BRAND>", header = "To list the available models"),
+    after_help = "\
+If there are multiple firmware variants for a single model (eg. HEV vs. PHEV),
+the command will fail and print out the list of available downloads as well as
+the additional command line options needed to select a specific one."
+)]
 pub struct DownloadCli {
-    #[command(flatten)]
+    #[arg(flatten)]
     pub family: FamilyGroup,
 
-    #[command(flatten)]
+    #[arg(flatten)]
     pub selector: FirmwareSelectorGroup,
 
     /// Output directory.
-    #[arg(short, long, value_parser, default_value = ".")]
+    #[arg(short, long, default = ".")]
     pub output: PathBuf,
 
     /// Download and post-processing concurrency.
     ///
     /// The maximum concurrency allowed is 16.
-    #[arg(short, long, default_value = "4")]
+    #[arg(short, long, from_str, default = "4")]
     pub concurrency: Concurrency,
 
     /// Maximum retries during download.
-    #[arg(long, default_value = "3")]
+    #[arg(long, default = "3")]
     pub retries: u8,
 
     /// Keep raw unextracted files.
     #[arg(short, long)]
     pub keep_raw: bool,
 
-    #[command(flatten)]
+    #[arg(flatten)]
     pub network: NetworkGroup,
 }
 
-fn verify_additional_help() -> String {
-    let styles = Styles::styled();
-    let h = styles.get_header();
-
-    format!(
-        "{h}Help:{h:#}
-
-  This subcommand is normally not needed because checksums are automatically
-  verified during the download process. However, it can be useful for verifying
-  checksums after the files have been copied elsewhere, for example to a USB
-  drive.
-
-  The vehicle itself will also verify checksums and digital signatures, so there
-  is minimal risk of corrupted files causing issues.
-"
-    )
-}
-
 /// Verify CRC32 of existing firmware.
-#[derive(Debug, Parser)]
-#[command(after_help = verify_additional_help())]
+#[derive(Debug, Args)]
+#[arg(after_help = "\
+This subcommand is normally not needed because checksums are automatically
+verified during the download process. However, it can be useful for verifying
+checksums after the files have been copied elsewhere, for example to a USB
+drive.
+
+The vehicle itself will also verify checksums and digital signatures, so there
+is minimal risk of corrupted files causing issues.")]
 pub struct VerifyCli {
     /// Firmware directory.
-    #[arg(short, long, value_parser, default_value = ".")]
+    #[arg(short, long, default = ".")]
     pub directory: PathBuf,
 
     /// Verification concurrency.
     ///
     /// The maximum concurrency allowed is 16.
-    #[arg(short, long, default_value = "4")]
+    #[arg(short, long, from_str, default = "4")]
     pub concurrency: Concurrency,
 }
 
@@ -277,29 +237,20 @@ pub enum Command {
     Verify(VerifyCli),
 }
 
-fn cli_additional_help() -> String {
-    let styles = Styles::styled();
-    let h = styles.get_header();
-    let l = styles.get_literal();
-    let p = styles.get_placeholder();
-
-    format!(
-        "{h}Help:{h:#}
-
-  For additional information about a subcommand, run:
-
-    {l}nudl{l:#} {p}<COMMAND>{p:#} {l}--help{l:#}
-"
+#[derive(Debug, Args)]
+#[arg(
+    name = "nudl",
+    version,
+    example(
+        "nudl <COMMAND> --help",
+        header = "For more information about a subcommand"
     )
-}
-
-#[derive(Debug, Parser)]
-#[command(version, after_help = cli_additional_help())]
+)]
 pub struct Cli {
-    #[command(subcommand)]
+    #[arg(subcommand)]
     pub command: Command,
 
     /// Lowest log message severity to output.
-    #[arg(long, global = true, value_name = "LEVEL", default_value_t = Level::INFO)]
+    #[arg(long, global, value_name = "LEVEL", from_str, default = "info")]
     pub log_level: Level,
 }

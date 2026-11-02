@@ -5,7 +5,7 @@ mod changelog;
 mod version;
 
 use anyhow::Result;
-use clap::{Parser, Subcommand};
+use winnow_args::{Args, Subcommand};
 
 use crate::version::SetVersionCli;
 
@@ -27,8 +27,8 @@ pub enum Command {
     UpdateChangelog,
 }
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Args)]
 pub struct Cli {
-    #[command(subcommand)]
+    #[arg(subcommand)]
     pub command: Command,
 }

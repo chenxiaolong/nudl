@@ -20,12 +20,12 @@ use std::{
 
 use anyhow::{Context, Result, anyhow, bail};
 use cap_std::{ambient_authority, fs::Dir};
-use clap::Parser;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
 use tokio::signal::ctrl_c;
 use tracing::debug;
 use unicode_width::UnicodeWidthStr;
+use winnow_args::Args;
 
 use crate::{
     cli::{Brand, Cli, Command, DownloadCli, ListCli, OutputFormat, VerifyCli},
