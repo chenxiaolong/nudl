@@ -11,6 +11,7 @@
 
 * Switch from clap to winnow-args for command line argument parsing ([PR #74])
   * Reduces executable size by 4% to 6%, depending on platform.
+* Add support for tab completion of commands ([PR #75])
 * Update dependencies ([PR #73])
 
 ### Version 1.2.0
@@ -194,3 +195,4 @@
 [PR #70]: https://github.com/chenxiaolong/nudl/pull/70
 [PR #73]: https://github.com/chenxiaolong/nudl/pull/73
 [PR #74]: https://github.com/chenxiaolong/nudl/pull/74
+[PR #75]: https://github.com/chenxiaolong/nudl/pull/75
