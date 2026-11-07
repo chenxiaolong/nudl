@@ -13,6 +13,7 @@ mod verify;
 mod version;
 
 use std::{
+    env,
     fmt::{self, Display, Write as _},
     io::{self, IsTerminal, Write},
     time::Duration,
@@ -28,7 +29,7 @@ use unicode_width::UnicodeWidthStr;
 use winnow_args::Args;
 
 use crate::{
-    cli::{Brand, Cli, Command, DownloadCli, ListCli, OutputFormat, VerifyCli},
+    cli::{Brand, Cli, Command, CompletionCli, DownloadCli, ListCli, OutputFormat, VerifyCli},
     client::{CarInfo, NuClient, NuClientBuilder},
     download::Downloader,
     progress::{Osc94, Osc94Printer, ProgressSuspendingStderr, SpeedTracker, progress_percentage},
@@ -122,6 +123,12 @@ impl fmt::Display for Selector {
             Self::Version(v) => write!(f, "-v {v}"),
         }
     }
+}
+
+fn completion_main(cli: &CompletionCli) -> Result<()> {
+    print!("{}", Cli::completion_script(cli.shell));
+
+    Ok(())
 }
 
 async fn list_subcommand(cli: &ListCli) -> Result<()> {
@@ -414,6 +421,13 @@ async fn verify_subcommand(cli: &VerifyCli, bars: MultiProgress) -> Result<()> {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let args = env::args_os().skip(1).collect::<Vec<_>>();
+
+    if let Some(answer) = Cli::completion_request(&args) {
+        print!("{answer}");
+        return Ok(());
+    }
+
     let cli = Cli::parse();
     let bars = MultiProgress::new();
     let stderr = ProgressSuspendingStderr::new(bars.clone());
@@ -431,6 +445,7 @@ async fn main() -> Result<()> {
         .map_err(|_| anyhow!("Failed to set up ring as rustls crypto provider"))?;
 
     match &cli.command {
+        Command::Completion(c) => completion_main(c),
         Command::List(c) => list_subcommand(c).await,
         Command::Download(c) => download_subcommand(c, bars).await,
         Command::Verify(c) => verify_subcommand(c, bars).await,

@@ -5,7 +5,7 @@ use std::{path::PathBuf, str::FromStr};
 
 use anyhow::bail;
 use tracing::Level;
-use winnow_args::{Args, Subcommand, ValueEnum};
+use winnow_args::{Args, Subcommand, ValueEnum, complete::Shell};
 
 use crate::Selector;
 
@@ -131,6 +131,14 @@ pub struct NetworkGroup {
     pub ignore_tls_validation: bool,
 }
 
+/// Generate shell tab completion configs.
+#[derive(Debug, Args)]
+pub struct CompletionCli {
+    /// The shell to generate completions for.
+    #[arg(short, long, value_name = "SHELL")]
+    pub shell: Shell,
+}
+
 /// List available firmware.
 #[derive(Debug, Args)]
 #[arg(
@@ -232,6 +240,7 @@ pub struct VerifyCli {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
+    Completion(CompletionCli),
     List(ListCli),
     Download(DownloadCli),
     Verify(VerifyCli),

@@ -70,6 +70,42 @@ Verification normally happens as part of the download process, but this command 
 
 Verifying existing firmware does not require network access.
 
+## Tab completion
+
+Tab completion configs can be generated from nudl itself.
+
+#### bash
+
+Add to `~/.bashrc`:
+
+```bash
+eval "$(nudl completion -s bash)"
+```
+
+#### zsh
+
+Add to `~/.zshrc`:
+
+```bash
+eval "$(nudl completion -s zsh)"
+```
+
+#### fish
+
+Add to `~/.config/fish/config.fish`:
+
+```bash
+nudl completion -s fish | source
+```
+
+#### PowerShell
+
+Add to PowerShell's `profile.ps1` startup script:
+
+```powershell
+Invoke-Expression (& nudl completion -s powershell)
+```
+
 ## Building from source
 
 To build from source, first make sure that the Rust toolchain is installed. It can be installed from https://rustup.rs/ or the OS's package manager.
