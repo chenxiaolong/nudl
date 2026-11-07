@@ -7,7 +7,7 @@
     to update the actual links at the bottom of the file.
 -->
 
-### Unreleased
+### Version 1.3.0
 
 * Switch from clap to winnow-args for command line argument parsing ([PR #74])
   * Reduces executable size by 4% to 6%, depending on platform.
