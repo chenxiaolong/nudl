@@ -28,6 +28,8 @@ To download the latest firmware for a vehicle, run:
 nudl download -b <brand> -m <model> -o <output directory>
 ```
 
+`<output directory>` should be the root directory of the USB drive (without any additional subdirectories). Downloading to the local disk first and then copying the downloaded files to the USB drive later also works.
+
 If a model has multiple variants that share the same model ID (for example, HEV vs PHEV), `nudl download` will error and list the available firmware versions. Disambiguate by specifying the model name or exact firmware version shown by `nudl list`:
 
 ```bash
